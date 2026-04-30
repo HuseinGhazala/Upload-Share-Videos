@@ -94,6 +94,15 @@ export default function VideoGallery({ videos, onCopy, onTrackView, pagination, 
                   Copy Link
                 </button>
                 <button
+                  onClick={() => onCopy(video.rawUrl || video.sourceUrl || video.url)}
+                  className="flex items-center justify-center gap-1.5 text-xs px-3 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/20 transition"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 010 5.656l-3 3a4 4 0 11-5.656-5.656l1.5-1.5m6.328-1.172a4 4 0 010-5.656l3-3a4 4 0 115.656 5.656l-1.5 1.5" />
+                  </svg>
+                  Copy Raw URL
+                </button>
+                <button
                   onClick={() => onCopy(`${video.url}${video.visibility === 'public' ? '' : `?accessToken=${video.accessToken}`}`)}
                   className="flex items-center justify-center gap-1.5 text-xs px-3 py-2 rounded-xl bg-purple-500/10 hover:bg-purple-500/30 text-purple-300 border border-purple-500/20 transition"
                 >
