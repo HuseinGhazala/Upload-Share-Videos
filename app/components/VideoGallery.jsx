@@ -9,6 +9,13 @@ function formatSize(bytes) {
   return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
 }
 
+function getRawUrl(video) {
+  if (video.source === 'github' && video.public_id) {
+    return `https://github.com/HuseinGhazala/vide/raw/refs/heads/main/${video.public_id}`;
+  }
+  return video.rawUrl || video.sourceUrl || video.url;
+}
+
 export default function VideoGallery({ videos, onCopy, onTrackView, pagination, onPageChange, loading }) {
   const [playing, setPlaying] = useState(null);
 
@@ -94,7 +101,7 @@ export default function VideoGallery({ videos, onCopy, onTrackView, pagination, 
                   Copy Link
                 </button>
                 <button
-                  onClick={() => onCopy(video.rawUrl || video.sourceUrl || video.url)}
+                  onClick={() => onCopy(getRawUrl(video))}
                   className="flex items-center justify-center gap-1.5 text-xs px-3 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/20 transition"
                 >
                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
