@@ -24,3 +24,23 @@ export async function uploadToCloudinary(buffer, options = {}) {
     uploadStream.end(buffer);
   });
 }
+
+export function getOptimizedVideoUrl(publicId) {
+  return cloudinary.url(publicId, {
+    resource_type: 'video',
+    quality: 'auto:good',
+    fetch_format: 'mp4',
+    video_codec: 'auto',
+  });
+}
+
+export function getThumbnailUrl(publicId) {
+  return cloudinary.url(publicId, {
+    resource_type: 'video',
+    format: 'jpg',
+    transformation: [
+      { width: 640, height: 360, crop: 'fill', gravity: 'auto' },
+      { start_offset: '1' },
+    ],
+  });
+}

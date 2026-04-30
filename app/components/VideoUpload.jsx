@@ -11,6 +11,7 @@ export default function VideoUpload({ onUpload, loading, progress, error, onToas
   const [selectedFile, setSelectedFile] = useState(null);
   const [fileError, setFileError] = useState('');
   const [lastUploaded, setLastUploaded] = useState(null);
+  const [visibility, setVisibility] = useState('public');
   const inputRef = useRef(null);
 
   const validateFile = (file) => {
@@ -35,7 +36,7 @@ export default function VideoUpload({ onUpload, loading, progress, error, onToas
       setLastUploaded(null);
 
       try {
-        const result = await onUpload(file);
+        const result = await onUpload(file, visibility);
         setLastUploaded(result);
         setSelectedFile(null);
         onToast('✅ Video uploaded successfully!', 'success');
@@ -43,7 +44,7 @@ export default function VideoUpload({ onUpload, loading, progress, error, onToas
         onToast('❌ ' + (e.message || 'Upload failed'), 'error');
       }
     },
-    [onUpload, onToast]
+    [onUpload, onToast, visibility]
   );
 
   const onDrop = (e) => {
@@ -107,6 +108,20 @@ export default function VideoUpload({ onUpload, loading, progress, error, onToas
 
       {loading && <ProgressBar progress={progress} />}
 
+      <div className="mt-4 flex items-center gap-3">
+        <label className="text-sm text-white/70">Visibility</label>
+        <select
+          value={visibility}
+          onChange={(e) => setVisibility(e.target.value)}
+          disabled={loading}
+          className="rounded-lg bg-white/10 border border-white/20 px-3 py-2 text-sm text-white outline-none"
+        >
+          <option value="public" className="text-black">Public</option>
+          <option value="private" className="text-black">Private</option>
+          <option value="unlisted" className="text-black">Unlisted</option>
+        </select>
+      </div>
+
       {displayError && (
         <div className="mt-3 flex items-center gap-2 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
           <svg className="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 20 20">
@@ -122,6 +137,11 @@ export default function VideoUpload({ onUpload, loading, progress, error, onToas
         <div className="mt-4 px-4 py-3 rounded-xl bg-green-500/10 border border-green-500/20">
           <p className="text-green-400 text-sm font-medium">✅ Upload complete!</p>
           <p className="text-white/50 text-xs mt-1 truncate">{lastUploaded.url}</p>
+          {lastUploaded.visibility !== 'public' && (
+            <p className="text-yellow-300 text-xs mt-1">
+              Access token: {lastUploaded.accessToken}
+            </p>
+          )}
         </div>
       )}
     </div>

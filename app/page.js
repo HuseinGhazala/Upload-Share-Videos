@@ -2,6 +2,7 @@
 import { useState, useCallback } from 'react';
 import VideoUpload from './components/VideoUpload';
 import VideoGallery from './components/VideoGallery';
+import MediaLab from './components/MediaLab';
 import { useVideoUpload } from './hooks/useVideoUpload';
 
 function Toast({ toasts }) {
@@ -23,7 +24,18 @@ function Toast({ toasts }) {
 }
 
 export default function HomePage() {
-  const { upload, progress, loading, error, uploadedVideos, removeVideo, reset } = useVideoUpload();
+  const {
+    upload,
+    progress,
+    loading,
+    loadingList,
+    error,
+    uploadedVideos,
+    stats,
+    pagination,
+    setPage,
+    trackView,
+  } = useVideoUpload();
   const [toasts, setToasts] = useState([]);
 
   const showToast = useCallback((message, type = 'success') => {
@@ -74,12 +86,38 @@ export default function HomePage() {
           />
         </div>
 
+        {stats && (
+          <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+              <p className="text-xs text-white/50">Total Videos</p>
+              <p className="text-xl font-bold">{stats.totalVideos}</p>
+            </div>
+            <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+              <p className="text-xs text-white/50">Total Views</p>
+              <p className="text-xl font-bold">{stats.totalViews}</p>
+            </div>
+            <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+              <p className="text-xs text-white/50">Public</p>
+              <p className="text-xl font-bold">{stats.byVisibility.public}</p>
+            </div>
+            <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+              <p className="text-xs text-white/50">Private + Unlisted</p>
+              <p className="text-xl font-bold">{stats.byVisibility.private + stats.byVisibility.unlisted}</p>
+            </div>
+          </div>
+        )}
+
         {/* Gallery */}
         <VideoGallery
           videos={uploadedVideos}
-          onRemove={removeVideo}
           onCopy={handleCopy}
+          onTrackView={trackView}
+          pagination={pagination}
+          onPageChange={setPage}
+          loading={loadingList}
         />
+
+        <MediaLab onToast={showToast} />
       </div>
 
       <Toast toasts={toasts} />
