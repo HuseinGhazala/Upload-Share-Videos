@@ -47,31 +47,37 @@ export async function POST(request) {
       process.env.CLOUDINARY_API_KEY &&
       process.env.CLOUDINARY_API_SECRET
     ) {
-      const publicId = `audio_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
-      const uploadResult = await uploadToCloudinary(buffer, {
-        resource_type: isVideoInput ? 'video' : 'video',
-        public_id: publicId,
-        folder: 'audio-uploads',
-      });
+      try {
+        const publicId = `audio_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
+        const uploadResult = await uploadToCloudinary(buffer, {
+          resource_type: 'video',
+          public_id: publicId,
+          folder: 'audio-uploads',
+        });
 
-      const audioUrl = cloudinary.url(uploadResult.public_id, {
-        resource_type: 'video',
-        format: 'mp3',
-      });
+        const audioUrl = cloudinary.url(uploadResult.public_id, {
+          resource_type: 'video',
+          format: 'mp3',
+        });
 
-      return NextResponse.json({
-        success: true,
-        item: {
-          id: crypto.randomUUID(),
-          type: 'audio',
-          source: 'cloudinary',
-          url: audioUrl,
-          public_id: uploadResult.public_id,
-          fromVideo: isVideoInput,
-          name: file.name,
-          size: file.size,
-        },
-      });
+        return NextResponse.json({
+          success: true,
+          item: {
+            id: crypto.randomUUID(),
+            type: 'audio',
+            source: 'cloudinary',
+            url: audioUrl,
+            public_id: uploadResult.public_id,
+            fromVideo: isVideoInput,
+            name: file.name,
+            size: file.size,
+          },
+        });
+      } catch (cloudinaryError) {
+        // #region agent log
+        fetch('http://127.0.0.1:7531/ingest/2bbb9be2-9e09-4d6e-beb1-e45041ba6453',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'1e3807'},body:JSON.stringify({sessionId:'1e3807',runId:'post-fix',hypothesisId:'H5',location:'app/api/upload-audio/route.js:72',message:'audio cloudinary fallback triggered',data:{errorName:cloudinaryError?.name || 'unknown',httpCode:cloudinaryError?.http_code || null},timestamp:Date.now()})}).catch(()=>{});
+        // #endregion
+      }
     }
 
     const uploadsDir = path.join(process.cwd(), 'public', 'uploads', 'audio');
