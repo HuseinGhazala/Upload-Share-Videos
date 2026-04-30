@@ -4,6 +4,7 @@ import path from 'path';
 import crypto from 'crypto';
 import { addVideo } from '../../lib/videoStore';
 import { getClientIp, rateLimit } from '../../lib/rateLimit';
+import { uploadVideoToGitHub } from '../../lib/githubUpload';
 import {
   getOptimizedVideoUrl,
   getThumbnailUrl,
@@ -112,6 +113,27 @@ export async function POST(request) {
     }
 
     // Fallback: save locally
+    try {
+      const githubResult = await uploadVideoToGitHub(buffer, {
+        originalName: file.name,
+        mimeType: file.type,
+      });
+      if (githubResult) {
+        const savedVideo = await addVideo({
+          ...baseVideo,
+          public_id: githubResult.publicId,
+          source: 'github',
+          sourceUrl: githubResult.sourceUrl,
+          url: `/api/videos/${baseVideo.id}/stream`,
+          thumbnailUrl: '',
+        });
+        return NextResponse.json({ success: true, video: savedVideo });
+      }
+    } catch (githubError) {
+      console.error('GitHub upload failed, falling back to local:', githubError);
+    }
+
+    // Last fallback: save locally
     const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
     await mkdir(uploadsDir, { recursive: true });
     const filename = `video_${Date.now()}_${file.name.replace(/\s+/g, '_')}`;

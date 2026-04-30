@@ -39,6 +39,20 @@ Get your credentials from: https://cloudinary.com/console
 
 > **Note:** If you skip this step, uploads will be saved locally in `/public/uploads` automatically.
 
+### 2.1 Configure GitHub uploads (optional)
+
+To upload videos directly to the GitHub repository `HuseinGhazala/vide`, add:
+
+```env
+GITHUB_UPLOAD_TOKEN=your_github_token_with_contents_write
+GITHUB_UPLOAD_OWNER=HuseinGhazala
+GITHUB_UPLOAD_REPO=vide
+GITHUB_UPLOAD_BRANCH=main
+GITHUB_UPLOAD_FOLDER=uploads
+```
+
+When token is configured, the app tries GitHub upload before local fallback.
+
 ### 3. Run the development server
 
 ```bash
