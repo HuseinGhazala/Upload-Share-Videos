@@ -50,7 +50,18 @@ export default function HomePage() {
       const safeHost = hostname === '0.0.0.0' ? 'localhost' : hostname;
       return `${protocol}//${safeHost}${port ? `:${port}` : ''}`;
     })();
-    const fullUrl = url.startsWith('http') ? url : baseUrl + url;
+    let fullUrl = url.startsWith('http') ? url : baseUrl + url;
+    try {
+      const parsed = new URL(fullUrl);
+      if (parsed.hostname === '0.0.0.0') {
+        const currentHost = window.location.hostname === '0.0.0.0' ? 'localhost' : window.location.hostname;
+        parsed.hostname = currentHost;
+        if (!parsed.port && window.location.port) parsed.port = window.location.port;
+        fullUrl = parsed.toString();
+      }
+    } catch {
+      // Keep original URL if parsing fails.
+    }
     navigator.clipboard.writeText(fullUrl)
       .then(() => showToast('📋 Link copied to clipboard!', 'success'))
       .catch(() => showToast('Failed to copy link', 'error'));
