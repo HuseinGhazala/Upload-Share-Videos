@@ -85,7 +85,7 @@ export default function VideoGallery({ videos, onCopy, onTrackView, pagination, 
 
               <div className="flex gap-2 mt-3">
                 <button
-                  onClick={() => onCopy(video.url)}
+                  onClick={() => onCopy(video.rawUrl || video.url)}
                   className="flex-1 flex items-center justify-center gap-1.5 text-xs px-3 py-2 rounded-xl bg-indigo-500/20 hover:bg-indigo-500/40 text-indigo-300 border border-indigo-500/30 transition"
                 >
                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
