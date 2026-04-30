@@ -5,6 +5,8 @@ import VideoGallery from './components/VideoGallery';
 import MediaLab from './components/MediaLab';
 import { useVideoUpload } from './hooks/useVideoUpload';
 
+const DEPLOYED_SITE_URL = 'https://dimgrey-toad-847466.hostingersite.com';
+
 function Toast({ toasts }) {
   return (
     <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-2">
@@ -45,18 +47,14 @@ export default function HomePage() {
   }, []);
 
   const handleCopy = useCallback((url) => {
-    const baseUrl = (() => {
-      const { protocol, hostname, port } = window.location;
-      const safeHost = hostname === '0.0.0.0' ? 'localhost' : hostname;
-      return `${protocol}//${safeHost}${port ? `:${port}` : ''}`;
-    })();
+    const baseUrl = DEPLOYED_SITE_URL;
     let fullUrl = url.startsWith('http') ? url : baseUrl + url;
     try {
       const parsed = new URL(fullUrl);
       if (parsed.hostname === '0.0.0.0') {
-        const currentHost = window.location.hostname === '0.0.0.0' ? 'localhost' : window.location.hostname;
-        parsed.hostname = currentHost;
-        if (!parsed.port && window.location.port) parsed.port = window.location.port;
+        parsed.hostname = 'dimgrey-toad-847466.hostingersite.com';
+        parsed.protocol = 'https:';
+        parsed.port = '';
         fullUrl = parsed.toString();
       }
     } catch {
