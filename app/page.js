@@ -45,7 +45,12 @@ export default function HomePage() {
   }, []);
 
   const handleCopy = useCallback((url) => {
-    const fullUrl = url.startsWith('http') ? url : window.location.origin + url;
+    const baseUrl = (() => {
+      const { protocol, hostname, port } = window.location;
+      const safeHost = hostname === '0.0.0.0' ? 'localhost' : hostname;
+      return `${protocol}//${safeHost}${port ? `:${port}` : ''}`;
+    })();
+    const fullUrl = url.startsWith('http') ? url : baseUrl + url;
     navigator.clipboard.writeText(fullUrl)
       .then(() => showToast('📋 Link copied to clipboard!', 'success'))
       .catch(() => showToast('Failed to copy link', 'error'));
