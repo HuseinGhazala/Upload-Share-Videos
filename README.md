@@ -43,17 +43,19 @@ Get your credentials from: https://cloudinary.com/console
 
 Videos can be pushed to **one** GitHub repository. You need a token with **Contents: Read and write** on that repo, plus the owner and repo name.
 
+Production target for this project: [themiifyHG/uploavideos](https://github.com/themiifyHG/uploavideos).
+
 ```env
-GITHUB_UPLOAD_TOKEN=your_token
-GITHUB_UPLOAD_OWNER=your_username_or_org
-GITHUB_UPLOAD_REPO=your_repo_name
+GITHUB_UPLOAD_TOKEN=your_token_from_account_with_repo_access
+GITHUB_UPLOAD_OWNER=themiifyHG
+GITHUB_UPLOAD_REPO=uploavideos
 GITHUB_UPLOAD_BRANCH=main
 GITHUB_UPLOAD_FOLDER=uploads
 ```
 
 `GITHUB_UPLOAD_OWNER` and `GITHUB_UPLOAD_REPO` are **required** when using GitHub upload. If the token is set but these are missing, the app falls back to local files only.
 
-> **Migrate from a “test” setup:** put the values you used for the second account/repo into `GITHUB_UPLOAD_*` and **remove** all `GITHUB_UPLOAD2_*` variables from your host. Redeploy after saving.
+> **Token:** create it while logged in as a user that can push to `themiifyHG/uploavideos` (or use a fine-grained token with access to that repository only).
 
 ### 3. Run the development server
 
