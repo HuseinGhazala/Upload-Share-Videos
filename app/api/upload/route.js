@@ -4,7 +4,7 @@ import path from 'path';
 import crypto from 'crypto';
 import { addVideo } from '../../lib/videoStore';
 import { getClientIp, rateLimit } from '../../lib/rateLimit';
-import { uploadVideoToGitHub } from '../../lib/githubUpload';
+import { isGitHubUploadConfigured, uploadVideoToGitHub } from '../../lib/githubUpload';
 import {
   getOptimizedVideoUrl,
   getThumbnailUrl,
@@ -17,9 +17,6 @@ const MAX_SIZE = 50 * 1024 * 1024; // 50MB
 export async function POST(request) {
   try {
     const ip = getClientIp(request);
-    // #region agent log
-    fetch('http://127.0.0.1:7531/ingest/2bbb9be2-9e09-4d6e-beb1-e45041ba6453',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'1e3807'},body:JSON.stringify({sessionId:'1e3807',runId:'pre-fix',hypothesisId:'H1',location:'app/api/upload/route.js:19',message:'video upload request received',data:{ipMasked:ip ? 'present' : 'missing'},timestamp:Date.now()})}).catch(()=>{});
-    // #endregion
     const limited = rateLimit(`upload:${ip}`, { max: 10, windowMs: 60_000 });
     if (!limited.allowed) {
       return NextResponse.json(
@@ -32,9 +29,6 @@ export async function POST(request) {
     const file = formData.get('video');
     const visibilityInput = formData.get('visibility')?.toString() || 'public';
     const visibilityResult = visibilitySchema.safeParse(visibilityInput);
-    // #region agent log
-    fetch('http://127.0.0.1:7531/ingest/2bbb9be2-9e09-4d6e-beb1-e45041ba6453',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'1e3807'},body:JSON.stringify({sessionId:'1e3807',runId:'pre-fix',hypothesisId:'H2',location:'app/api/upload/route.js:32',message:'video upload payload validated',data:{hasFile:Boolean(file),type:file?.type || 'none',size:file?.size || 0,visibility:visibilityInput},timestamp:Date.now()})}).catch(()=>{});
-    // #endregion
 
     if (!file) {
       return NextResponse.json({ success: false, error: 'No file provided' }, { status: 400 });
@@ -76,7 +70,34 @@ export async function POST(request) {
       accessToken: crypto.randomBytes(16).toString('hex'),
     };
 
-    // Try Cloudinary first
+    // 1) GitHub first when configured (avoids Cloudinary timeouts on shared hosting)
+    if (isGitHubUploadConfigured()) {
+      try {
+        const githubResult = await uploadVideoToGitHub(buffer, {
+          originalName: file.name,
+          mimeType: file.type,
+        });
+        if (githubResult) {
+          const savedVideo = await addVideo({
+            ...baseVideo,
+            public_id: githubResult.publicId,
+            source: 'github',
+            rawUrl: githubResult.sourceUrl,
+            sourceUrl: githubResult.sourceUrl,
+            ghOwner: githubResult.owner,
+            ghRepo: githubResult.repo,
+            ghBranch: githubResult.branch,
+            url: `/api/videos/${baseVideo.id}/stream`,
+            thumbnailUrl: '',
+          });
+          return NextResponse.json({ success: true, video: savedVideo });
+        }
+      } catch (githubError) {
+        console.error('GitHub upload failed, trying Cloudinary/local:', githubError);
+      }
+    }
+
+    // 2) Cloudinary
     if (
       process.env.CLOUDINARY_CLOUD_NAME &&
       process.env.CLOUDINARY_API_KEY &&
@@ -102,41 +123,10 @@ export async function POST(request) {
           url: `/api/videos/${baseVideo.id}/stream`,
           thumbnailUrl: getThumbnailUrl(result.public_id),
         });
-        // #region agent log
-        fetch('http://127.0.0.1:7531/ingest/2bbb9be2-9e09-4d6e-beb1-e45041ba6453',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'1e3807'},body:JSON.stringify({sessionId:'1e3807',runId:'pre-fix',hypothesisId:'H3',location:'app/api/upload/route.js:98',message:'video uploaded to cloudinary',data:{source:'cloudinary',videoId:savedVideo.id},timestamp:Date.now()})}).catch(()=>{});
-        // #endregion
         return NextResponse.json({ success: true, video: savedVideo });
       } catch (cloudinaryError) {
         console.error('Cloudinary upload failed, falling back to local:', cloudinaryError);
-        // #region agent log
-        fetch('http://127.0.0.1:7531/ingest/2bbb9be2-9e09-4d6e-beb1-e45041ba6453',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'1e3807'},body:JSON.stringify({sessionId:'1e3807',runId:'pre-fix',hypothesisId:'H3',location:'app/api/upload/route.js:102',message:'video cloudinary fallback triggered',data:{errorName:cloudinaryError?.name || 'unknown',httpCode:cloudinaryError?.http_code || null},timestamp:Date.now()})}).catch(()=>{});
-        // #endregion
       }
-    }
-
-    // Fallback: save locally
-    try {
-      const githubResult = await uploadVideoToGitHub(buffer, {
-        originalName: file.name,
-        mimeType: file.type,
-      });
-      if (githubResult) {
-        const savedVideo = await addVideo({
-          ...baseVideo,
-          public_id: githubResult.publicId,
-          source: 'github',
-          rawUrl: githubResult.sourceUrl,
-          sourceUrl: githubResult.sourceUrl,
-          ghOwner: githubResult.owner,
-          ghRepo: githubResult.repo,
-          ghBranch: githubResult.branch,
-          url: `/api/videos/${baseVideo.id}/stream`,
-          thumbnailUrl: '',
-        });
-        return NextResponse.json({ success: true, video: savedVideo });
-      }
-    } catch (githubError) {
-      console.error('GitHub upload failed, falling back to local:', githubError);
     }
 
     // Last fallback: save locally
@@ -154,9 +144,6 @@ export async function POST(request) {
       url: `/api/videos/${baseVideo.id}/stream`,
       thumbnailUrl: '',
     });
-    // #region agent log
-    fetch('http://127.0.0.1:7531/ingest/2bbb9be2-9e09-4d6e-beb1-e45041ba6453',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'1e3807'},body:JSON.stringify({sessionId:'1e3807',runId:'pre-fix',hypothesisId:'H3',location:'app/api/upload/route.js:122',message:'video stored locally',data:{source:'local',videoId:savedVideo.id},timestamp:Date.now()})}).catch(()=>{});
-    // #endregion
 
     return NextResponse.json({ success: true, video: savedVideo });
   } catch (error) {

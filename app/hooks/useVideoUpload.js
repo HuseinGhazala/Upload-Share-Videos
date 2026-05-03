@@ -1,6 +1,26 @@
 'use client';
 import { useState, useCallback, useEffect } from 'react';
 
+function messageForUploadFailure(xhr) {
+  let jsonError = '';
+  try {
+    const j = JSON.parse(xhr.responseText || '{}');
+    if (typeof j.error === 'string' && j.error.trim()) jsonError = j.error.trim();
+  } catch {
+    // ignore
+  }
+  if (xhr.status === 503 || xhr.status === 504) {
+    return (
+      'Gateway timeout or service unavailable (' +
+      xhr.status +
+      '). The server may have a short request limit. Try again, use a smaller file, or check hosting logs.' +
+      (jsonError ? ` ${jsonError}` : '')
+    );
+  }
+  if (jsonError) return jsonError;
+  return `Server error: ${xhr.status}`;
+}
+
 export function useVideoUpload() {
   const [progress, setProgress] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -64,9 +84,6 @@ export function useVideoUpload() {
       });
 
       xhr.addEventListener('load', () => {
-        // #region agent log
-        fetch('http://127.0.0.1:7531/ingest/2bbb9be2-9e09-4d6e-beb1-e45041ba6453',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'1e3807'},body:JSON.stringify({sessionId:'1e3807',runId:'pre-fix',hypothesisId:'H2',location:'app/hooks/useVideoUpload.js:68',message:'client video upload response received',data:{status:xhr.status,responseLength:xhr.responseText?.length || 0},timestamp:Date.now()})}).catch(()=>{});
-        // #endregion
         if (xhr.status >= 200 && xhr.status < 300) {
           try {
             const data = JSON.parse(xhr.responseText);
@@ -86,7 +103,7 @@ export function useVideoUpload() {
             reject(err);
           }
         } else {
-          const msg = `Server error: ${xhr.status}`;
+          const msg = messageForUploadFailure(xhr);
           setError(msg);
           setLoading(false);
           reject(new Error(msg));

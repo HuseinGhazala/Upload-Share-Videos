@@ -4,6 +4,14 @@ import path from 'path';
  * Single GitHub destination for video uploads.
  * Set GITHUB_UPLOAD_TOKEN + GITHUB_UPLOAD_OWNER + GITHUB_UPLOAD_REPO on the server.
  */
+export function isGitHubUploadConfigured() {
+  return Boolean(
+    process.env.GITHUB_UPLOAD_TOKEN &&
+    process.env.GITHUB_UPLOAD_OWNER &&
+    process.env.GITHUB_UPLOAD_REPO
+  );
+}
+
 function getConfig() {
   const token = process.env.GITHUB_UPLOAD_TOKEN;
   const owner = process.env.GITHUB_UPLOAD_OWNER;
