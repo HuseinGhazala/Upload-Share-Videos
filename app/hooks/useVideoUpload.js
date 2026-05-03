@@ -13,12 +13,121 @@ function messageForUploadFailure(xhr) {
     return (
       'Gateway timeout or service unavailable (' +
       xhr.status +
-      '). The server may have a short request limit. Try again, use a smaller file, or check hosting logs.' +
+      '). The server may have a short request limit. Try again, use a smaller file, or enable Cloudinary so uploads go browser→Cloudinary (not through hosting).' +
       (jsonError ? ` ${jsonError}` : '')
     );
   }
   if (jsonError) return jsonError;
   return `Server error: ${xhr.status}`;
+}
+
+function xhrPromise(xhr, uploadProgress) {
+  return new Promise((resolve, reject) => {
+    xhr.upload.addEventListener('progress', (e) => {
+      if (e.lengthComputable && uploadProgress) {
+        uploadProgress(Math.round((e.loaded / e.total) * 100));
+      }
+    });
+    xhr.addEventListener('load', () => resolve(xhr));
+    xhr.addEventListener('error', () => reject(new Error('Network error during upload')));
+    xhr.addEventListener('abort', () => reject(new Error('Upload aborted')));
+  });
+}
+
+/** Browser → Cloudinary (large body skips shared hosting). */
+async function uploadDirectToCloudinary(params, file, visibility, setProgress) {
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('api_key', params.apiKey);
+  fd.append('timestamp', String(params.timestamp));
+  fd.append('signature', params.signature);
+  fd.append('folder', params.folder);
+  fd.append('public_id', params.publicId);
+
+  const xhr = new XMLHttpRequest();
+  const done = xhrPromise(xhr, setProgress);
+  xhr.open('POST', params.uploadUrl);
+  xhr.send(fd);
+  const res = await done;
+
+  if (res.status < 200 || res.status >= 300) {
+    let msg = `Cloudinary upload failed (${res.status})`;
+    try {
+      const err = JSON.parse(res.responseText || '{}');
+      if (err.error?.message) msg = err.error.message;
+      else if (typeof err.error === 'string') msg = err.error;
+    } catch {
+      // keep msg
+    }
+    throw new Error(msg);
+  }
+
+  const cld = JSON.parse(res.responseText);
+  if (cld.error) {
+    const em = cld.error.message || cld.error || 'Cloudinary upload failed';
+    throw new Error(typeof em === 'string' ? em : 'Cloudinary upload failed');
+  }
+
+  const reg = await fetch('/api/upload/register-cloudinary', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      public_id: cld.public_id,
+      visibility,
+      name: file.name,
+      size: file.size,
+      mimeType: file.type,
+    }),
+  });
+  const data = await reg.json();
+  if (!reg.ok || !data.success) {
+    throw new Error(data.error || 'Could not save video after Cloudinary upload');
+  }
+  return data.video;
+}
+
+function uploadViaServer(file, visibility, setProgress) {
+  return new Promise((resolve, reject) => {
+    const formData = new FormData();
+    formData.append('video', file);
+    formData.append('visibility', visibility);
+
+    const xhr = new XMLHttpRequest();
+
+    xhr.upload.addEventListener('progress', (e) => {
+      if (e.lengthComputable) {
+        setProgress(Math.round((e.loaded / e.total) * 100));
+      }
+    });
+
+    xhr.addEventListener('load', () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try {
+          const data = JSON.parse(xhr.responseText);
+          if (data.success) {
+            resolve(data.video);
+          } else {
+            reject(new Error(data.error || 'Upload failed'));
+          }
+        } catch (err) {
+          reject(err);
+        }
+      } else {
+        reject(new Error(messageForUploadFailure(xhr)));
+      }
+    });
+
+    xhr.addEventListener('error', () => {
+      reject(new Error('Network error during upload'));
+    });
+
+    xhr.addEventListener('abort', () => {
+      reject(new Error('Upload aborted'));
+    });
+
+    xhr.open('POST', '/api/upload');
+    xhr.send(formData);
+  });
 }
 
 export function useVideoUpload() {
@@ -64,70 +173,43 @@ export function useVideoUpload() {
     fetchStats();
   }, [fetchStats, fetchVideos]);
 
-  const upload = useCallback((file, visibility = 'public') => {
-    return new Promise((resolve, reject) => {
+  const upload = useCallback(
+    async (file, visibility = 'public') => {
       setLoading(true);
       setError(null);
       setProgress(0);
 
-      const formData = new FormData();
-      formData.append('video', file);
-      formData.append('visibility', visibility);
+      try {
+        const paramsRes = await fetch('/api/upload/cloudinary-params', { method: 'POST' });
+        const params = await paramsRes.json();
 
-      const xhr = new XMLHttpRequest();
-
-      xhr.upload.addEventListener('progress', (e) => {
-        if (e.lengthComputable) {
-          const pct = Math.round((e.loaded / e.total) * 100);
-          setProgress(pct);
+        if (paramsRes.status === 429) {
+          throw new Error(params.error || 'Too many upload requests. Try again in a minute.');
         }
-      });
+        if (!params.enabled && params.error) {
+          throw new Error(params.error);
+        }
 
-      xhr.addEventListener('load', () => {
-        if (xhr.status >= 200 && xhr.status < 300) {
-          try {
-            const data = JSON.parse(xhr.responseText);
-            if (data.success) {
-              const videoEntry = data.video;
-              setProgress(100);
-              setLoading(false);
-              fetchVideos(1);
-              fetchStats();
-              resolve(videoEntry);
-            } else {
-              throw new Error(data.error || 'Upload failed');
-            }
-          } catch (err) {
-            setError(err.message);
-            setLoading(false);
-            reject(err);
-          }
+        let video;
+        if (params.enabled) {
+          video = await uploadDirectToCloudinary(params, file, visibility, setProgress);
         } else {
-          const msg = messageForUploadFailure(xhr);
-          setError(msg);
-          setLoading(false);
-          reject(new Error(msg));
+          video = await uploadViaServer(file, visibility, setProgress);
         }
-      });
 
-      xhr.addEventListener('error', () => {
-        const msg = 'Network error during upload';
-        setError(msg);
+        setProgress(100);
+        fetchVideos(1);
+        fetchStats();
+        return video;
+      } catch (err) {
+        setError(err.message);
+        throw err;
+      } finally {
         setLoading(false);
-        reject(new Error(msg));
-      });
-
-      xhr.addEventListener('abort', () => {
-        const msg = 'Upload aborted';
-        setError(msg);
-        setLoading(false);
-        reject(new Error(msg));
-      });
-
-      xhr.open('POST', '/api/upload');
-      xhr.send(formData);
-    });
-  }, [fetchStats, fetchVideos]);
+      }
+    },
+    [fetchStats, fetchVideos]
+  );
 
   const trackView = useCallback(async (id, accessToken) => {
     const query = accessToken ? `?accessToken=${encodeURIComponent(accessToken)}` : '';
