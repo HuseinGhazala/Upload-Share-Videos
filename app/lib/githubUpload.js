@@ -15,21 +15,37 @@ function getSecondaryConfig() {
   const repo = process.env.GITHUB_UPLOAD2_REPO;
   if (!repo) return null;
 
-  const token =
-    process.env.GITHUB_UPLOAD2_TOKEN || process.env.GITHUB_UPLOAD_TOKEN;
-  if (!token) return null;
+  const primaryOwner = process.env.GITHUB_UPLOAD_OWNER || 'HuseinGhazala';
+  const secondaryOwner =
+    process.env.GITHUB_UPLOAD2_OWNER || primaryOwner;
+  const sameAccount =
+    primaryOwner.toLowerCase() === secondaryOwner.toLowerCase();
 
-  const owner =
-    process.env.GITHUB_UPLOAD2_OWNER ||
-    process.env.GITHUB_UPLOAD_OWNER ||
-    'HuseinGhazala';
+  const explicitSecondaryToken = process.env.GITHUB_UPLOAD2_TOKEN;
+  let token;
+  if (explicitSecondaryToken) {
+    token = explicitSecondaryToken;
+  } else if (sameAccount) {
+    token = process.env.GITHUB_UPLOAD_TOKEN;
+  } else {
+    console.warn(
+      '[GitHub mirror] Second repo uses another GitHub account/org. Set GITHUB_UPLOAD2_TOKEN from that account (fine-grained: Contents Read/Write on that repo). Reusing GITHUB_UPLOAD_TOKEN only works when GITHUB_UPLOAD2_OWNER matches GITHUB_UPLOAD_OWNER.'
+    );
+    return null;
+  }
+
+  if (!token) {
+    console.warn('[GitHub mirror] No token available for secondary repo.');
+    return null;
+  }
+
   const branch = process.env.GITHUB_UPLOAD2_BRANCH || 'main';
   const folder =
     process.env.GITHUB_UPLOAD2_FOLDER ||
     process.env.GITHUB_UPLOAD_FOLDER ||
     'uploads';
 
-  return { token, owner, repo, branch, folder };
+  return { token, owner: secondaryOwner, repo, branch, folder };
 }
 
 function extFromMime(mimeType) {
@@ -95,7 +111,10 @@ export async function uploadVideoToGitHub(buffer, { originalName, mimeType }) {
     try {
       secondaryResult = await putFileToRepo(buffer, secondaryPath, secondary);
     } catch (err) {
-      console.error('Secondary GitHub repo upload failed:', err);
+      console.error(
+        '[GitHub mirror] Secondary repo upload failed:',
+        err?.message || err
+      );
     }
   }
 

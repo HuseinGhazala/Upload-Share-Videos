@@ -55,15 +55,21 @@ When token is configured, the app tries GitHub upload before local fallback.
 
 ### 2.2 Second GitHub repository (optional)
 
-To also push the same file to another repository, set (at minimum) `GITHUB_UPLOAD2_REPO`. The same upload filename is used in both repos. You can use the same token or a separate one.
+To also push the same file to another repository, set (at minimum) `GITHUB_UPLOAD2_REPO`. The same upload filename is used in both repos.
+
+**Same GitHub account / same owner:** you can omit `GITHUB_UPLOAD2_TOKEN` — the app reuses `GITHUB_UPLOAD_TOKEN`.
+
+**Different GitHub account or organization:** you **must** create a token **on that account** (Personal Access Token or fine-grained token with **Contents: Read and write** on that repo), then set:
 
 ```env
-GITHUB_UPLOAD2_TOKEN=optional_if_same_as_GITHUB_UPLOAD_TOKEN
-GITHUB_UPLOAD2_OWNER=HuseinGhazala
+GITHUB_UPLOAD2_OWNER=username_or_org_that_owns_the_second_repo
 GITHUB_UPLOAD2_REPO=your-second-repo
+GITHUB_UPLOAD2_TOKEN=token_from_that_account
 GITHUB_UPLOAD2_BRANCH=main
 GITHUB_UPLOAD2_FOLDER=uploads
 ```
+
+Using only `GITHUB_UPLOAD_TOKEN` will **not** upload to someone else’s repo (GitHub returns 403/404).
 
 In the gallery, use **Raw (repo 1)** and **Raw (repo 2)** to copy the matching links.
 
