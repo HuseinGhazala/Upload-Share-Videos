@@ -11,9 +11,20 @@ function formatSize(bytes) {
 
 function getRawUrl(video) {
   if (video.source === 'github' && video.public_id) {
-    return `https://github.com/HuseinGhazala/vide/raw/refs/heads/main/${video.public_id}`;
+    const owner = video.ghOwner || 'HuseinGhazala';
+    const repo = video.ghRepo || 'vide';
+    const branch = video.ghBranch || 'main';
+    return `https://github.com/${owner}/${repo}/raw/refs/heads/${branch}/${video.public_id}`;
   }
   return video.rawUrl || video.sourceUrl || video.url;
+}
+
+function getRawUrl2(video) {
+  if (video.public_id2 && video.gh2Owner && video.gh2Repo) {
+    const branch = video.gh2Branch || 'main';
+    return `https://github.com/${video.gh2Owner}/${video.gh2Repo}/raw/refs/heads/${branch}/${video.public_id2}`;
+  }
+  return video.rawUrl2 || '';
 }
 
 export default function VideoGallery({ videos, onCopy, onTrackView, pagination, onPageChange, loading }) {
@@ -90,10 +101,10 @@ export default function VideoGallery({ videos, onCopy, onTrackView, pagination, 
                 {video.visibility}
               </span>
 
-              <div className="flex gap-2 mt-3">
+              <div className="flex flex-wrap gap-2 mt-3">
                 <button
                   onClick={() => onCopy(video.rawUrl || video.url)}
-                  className="flex-1 flex items-center justify-center gap-1.5 text-xs px-3 py-2 rounded-xl bg-indigo-500/20 hover:bg-indigo-500/40 text-indigo-300 border border-indigo-500/30 transition"
+                  className="flex-1 min-w-[100px] flex items-center justify-center gap-1.5 text-xs px-3 py-2 rounded-xl bg-indigo-500/20 hover:bg-indigo-500/40 text-indigo-300 border border-indigo-500/30 transition"
                 >
                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
@@ -107,14 +118,26 @@ export default function VideoGallery({ videos, onCopy, onTrackView, pagination, 
                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 010 5.656l-3 3a4 4 0 11-5.656-5.656l1.5-1.5m6.328-1.172a4 4 0 010-5.656l3-3a4 4 0 115.656 5.656l-1.5 1.5" />
                   </svg>
-                  Copy Raw URL
+                  Raw (repo 1)
                 </button>
+                {getRawUrl2(video) ? (
+                  <button
+                    type="button"
+                    onClick={() => onCopy(getRawUrl2(video))}
+                    className="flex items-center justify-center gap-1.5 text-xs px-3 py-2 rounded-xl bg-teal-500/10 hover:bg-teal-500/30 text-teal-300 border border-teal-500/20 transition"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 010 5.656l-3 3a4 4 0 11-5.656-5.656l1.5-1.5m6.328-1.172a4 4 0 010-5.656l3-3a4 4 0 115.656 5.656l-1.5 1.5" />
+                    </svg>
+                    Raw (repo 2)
+                  </button>
+                ) : null}
                 <button
                   onClick={() => onCopy(`${video.url}${video.visibility === 'public' ? '' : `?accessToken=${video.accessToken}`}`)}
                   className="flex items-center justify-center gap-1.5 text-xs px-3 py-2 rounded-xl bg-purple-500/10 hover:bg-purple-500/30 text-purple-300 border border-purple-500/20 transition"
                 >
                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                   </svg>
                   Copy Access Link
                 </button>

@@ -87,7 +87,6 @@ export default function HomePage() {
             Upload & Share Videos
           </h1>
           <p className="mt-4 text-white/40 text-lg max-w-xl mx-auto">
-            Drag, drop, and stream. Powered by Cloudinary with local fallback.
           </p>
         </div>
 

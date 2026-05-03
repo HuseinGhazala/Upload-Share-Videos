@@ -1,6 +1,6 @@
 import path from 'path';
 
-function getConfig() {
+function getPrimaryConfig() {
   const token = process.env.GITHUB_UPLOAD_TOKEN;
   const owner = process.env.GITHUB_UPLOAD_OWNER || 'HuseinGhazala';
   const repo = process.env.GITHUB_UPLOAD_REPO || 'vide';
@@ -11,6 +11,27 @@ function getConfig() {
   return { token, owner, repo, branch, folder };
 }
 
+function getSecondaryConfig() {
+  const repo = process.env.GITHUB_UPLOAD2_REPO;
+  if (!repo) return null;
+
+  const token =
+    process.env.GITHUB_UPLOAD2_TOKEN || process.env.GITHUB_UPLOAD_TOKEN;
+  if (!token) return null;
+
+  const owner =
+    process.env.GITHUB_UPLOAD2_OWNER ||
+    process.env.GITHUB_UPLOAD_OWNER ||
+    'HuseinGhazala';
+  const branch = process.env.GITHUB_UPLOAD2_BRANCH || 'main';
+  const folder =
+    process.env.GITHUB_UPLOAD2_FOLDER ||
+    process.env.GITHUB_UPLOAD_FOLDER ||
+    'uploads';
+
+  return { token, owner, repo, branch, folder };
+}
+
 function extFromMime(mimeType) {
   if (mimeType === 'video/mp4') return 'mp4';
   if (mimeType === 'video/webm') return 'webm';
@@ -18,15 +39,7 @@ function extFromMime(mimeType) {
   return 'mp4';
 }
 
-export async function uploadVideoToGitHub(buffer, { originalName, mimeType }) {
-  const config = getConfig();
-  if (!config) return null;
-
-  const safeName = (originalName || 'video').replace(/[^a-zA-Z0-9._-]/g, '_');
-  const ext = path.extname(safeName).replace('.', '') || extFromMime(mimeType);
-  const base = path.basename(safeName, path.extname(safeName)) || `video_${Date.now()}`;
-  const fileName = `${Date.now()}_${base}.${ext}`;
-  const contentPath = `${config.folder}/${fileName}`;
+async function putFileToRepo(buffer, contentPath, config) {
   const apiUrl = `https://api.github.com/repos/${config.owner}/${config.repo}/contents/${contentPath}`;
 
   const response = await fetch(apiUrl, {
@@ -39,7 +52,7 @@ export async function uploadVideoToGitHub(buffer, { originalName, mimeType }) {
       'User-Agent': 'video-upload-app',
     },
     body: JSON.stringify({
-      message: `upload video ${fileName}`,
+      message: `upload video ${path.basename(contentPath)}`,
       content: buffer.toString('base64'),
       branch: config.branch,
     }),
@@ -50,8 +63,49 @@ export async function uploadVideoToGitHub(buffer, { originalName, mimeType }) {
     throw new Error(`GitHub upload failed (${response.status}): ${details.slice(0, 300)}`);
   }
 
+  const rawGithubUrl = `https://github.com/${config.owner}/${config.repo}/raw/refs/heads/${config.branch}/${contentPath}`;
+  const rawUserContentUrl = `https://raw.githubusercontent.com/${config.owner}/${config.repo}/${config.branch}/${contentPath}`;
+
   return {
-    sourceUrl: `https://raw.githubusercontent.com/${config.owner}/${config.repo}/${config.branch}/${contentPath}`,
+    sourceUrl: rawUserContentUrl,
+    rawGithubUrl,
     publicId: contentPath,
+    owner: config.owner,
+    repo: config.repo,
+    branch: config.branch,
+  };
+}
+
+export async function uploadVideoToGitHub(buffer, { originalName, mimeType }) {
+  const primary = getPrimaryConfig();
+  if (!primary) return null;
+
+  const safeName = (originalName || 'video').replace(/[^a-zA-Z0-9._-]/g, '_');
+  const ext = path.extname(safeName).replace('.', '') || extFromMime(mimeType);
+  const base = path.basename(safeName, path.extname(safeName)) || `video_${Date.now()}`;
+  const fileName = `${Date.now()}_${base}.${ext}`;
+  const primaryPath = `${primary.folder}/${fileName}`;
+
+  const primaryResult = await putFileToRepo(buffer, primaryPath, primary);
+
+  const secondary = getSecondaryConfig();
+  let secondaryResult = null;
+  if (secondary) {
+    const secondaryPath = `${secondary.folder}/${fileName}`;
+    try {
+      secondaryResult = await putFileToRepo(buffer, secondaryPath, secondary);
+    } catch (err) {
+      console.error('Secondary GitHub repo upload failed:', err);
+    }
+  }
+
+  return {
+    sourceUrl: primaryResult.sourceUrl,
+    publicId: primaryResult.publicId,
+    rawGithubUrl: primaryResult.rawGithubUrl,
+    owner: primaryResult.owner,
+    repo: primaryResult.repo,
+    branch: primaryResult.branch,
+    secondary: secondaryResult,
   };
 }
