@@ -5,11 +5,6 @@ import crypto from 'crypto';
 import { addVideo } from '../../lib/videoStore';
 import { getClientIp, rateLimit } from '../../lib/rateLimit';
 import { isGitHubUploadConfigured, uploadVideoToGitHub } from '../../lib/githubUpload';
-import {
-  getOptimizedVideoUrl,
-  getThumbnailUrl,
-  uploadToCloudinary,
-} from '../../lib/cloudinary';
 import { visibilitySchema } from '../../lib/validation';
 const ALLOWED_TYPES = ['video/mp4', 'video/webm', 'video/quicktime'];
 const MAX_SIZE = 50 * 1024 * 1024; // 50MB
@@ -70,7 +65,7 @@ export async function POST(request) {
       accessToken: crypto.randomBytes(16).toString('hex'),
     };
 
-    // 1) GitHub first when configured (avoids Cloudinary timeouts on shared hosting)
+    // GitHub when configured, otherwise local disk
     if (isGitHubUploadConfigured()) {
       try {
         const githubResult = await uploadVideoToGitHub(buffer, {
@@ -93,43 +88,11 @@ export async function POST(request) {
           return NextResponse.json({ success: true, video: savedVideo });
         }
       } catch (githubError) {
-        console.error('GitHub upload failed, trying Cloudinary/local:', githubError);
+        console.error('GitHub upload failed, falling back to local:', githubError);
       }
     }
 
-    // 2) Cloudinary
-    if (
-      process.env.CLOUDINARY_CLOUD_NAME &&
-      process.env.CLOUDINARY_API_KEY &&
-      process.env.CLOUDINARY_API_SECRET
-    ) {
-      try {
-        const result = await uploadToCloudinary(buffer, {
-          public_id: `video_${Date.now()}`,
-          eager: [
-            {
-              quality: 'auto:good',
-              fetch_format: 'mp4',
-              video_codec: 'auto',
-            },
-          ],
-        });
-        const savedVideo = await addVideo({
-          ...baseVideo,
-          source: 'cloudinary',
-          public_id: result.public_id,
-          rawUrl: getOptimizedVideoUrl(result.public_id),
-          sourceUrl: getOptimizedVideoUrl(result.public_id),
-          url: `/api/videos/${baseVideo.id}/stream`,
-          thumbnailUrl: getThumbnailUrl(result.public_id),
-        });
-        return NextResponse.json({ success: true, video: savedVideo });
-      } catch (cloudinaryError) {
-        console.error('Cloudinary upload failed, falling back to local:', cloudinaryError);
-      }
-    }
-
-    // Last fallback: save locally
+    // Local fallback
     const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
     await mkdir(uploadsDir, { recursive: true });
     const filename = `video_${Date.now()}_${file.name.replace(/\s+/g, '_')}`;

@@ -13,77 +13,12 @@ function messageForUploadFailure(xhr) {
     return (
       'Gateway timeout or service unavailable (' +
       xhr.status +
-      '). The server may have a short request limit. Try again, use a smaller file, or enable Cloudinary so uploads go browser→Cloudinary (not through hosting).' +
+      '). The host may limit large uploads; try a smaller file or check server limits and logs.' +
       (jsonError ? ` ${jsonError}` : '')
     );
   }
   if (jsonError) return jsonError;
   return `Server error: ${xhr.status}`;
-}
-
-function xhrPromise(xhr, uploadProgress) {
-  return new Promise((resolve, reject) => {
-    xhr.upload.addEventListener('progress', (e) => {
-      if (e.lengthComputable && uploadProgress) {
-        uploadProgress(Math.round((e.loaded / e.total) * 100));
-      }
-    });
-    xhr.addEventListener('load', () => resolve(xhr));
-    xhr.addEventListener('error', () => reject(new Error('Network error during upload')));
-    xhr.addEventListener('abort', () => reject(new Error('Upload aborted')));
-  });
-}
-
-/** Browser → Cloudinary (large body skips shared hosting). */
-async function uploadDirectToCloudinary(params, file, visibility, setProgress) {
-  const fd = new FormData();
-  fd.append('file', file);
-  fd.append('api_key', params.apiKey);
-  fd.append('timestamp', String(params.timestamp));
-  fd.append('signature', params.signature);
-  fd.append('folder', params.folder);
-  fd.append('public_id', params.publicId);
-
-  const xhr = new XMLHttpRequest();
-  const done = xhrPromise(xhr, setProgress);
-  xhr.open('POST', params.uploadUrl);
-  xhr.send(fd);
-  const res = await done;
-
-  if (res.status < 200 || res.status >= 300) {
-    let msg = `Cloudinary upload failed (${res.status})`;
-    try {
-      const err = JSON.parse(res.responseText || '{}');
-      if (err.error?.message) msg = err.error.message;
-      else if (typeof err.error === 'string') msg = err.error;
-    } catch {
-      // keep msg
-    }
-    throw new Error(msg);
-  }
-
-  const cld = JSON.parse(res.responseText);
-  if (cld.error) {
-    const em = cld.error.message || cld.error || 'Cloudinary upload failed';
-    throw new Error(typeof em === 'string' ? em : 'Cloudinary upload failed');
-  }
-
-  const reg = await fetch('/api/upload/register-cloudinary', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      public_id: cld.public_id,
-      visibility,
-      name: file.name,
-      size: file.size,
-      mimeType: file.type,
-    }),
-  });
-  const data = await reg.json();
-  if (!reg.ok || !data.success) {
-    throw new Error(data.error || 'Could not save video after Cloudinary upload');
-  }
-  return data.video;
 }
 
 function uploadViaServer(file, visibility, setProgress) {
@@ -180,23 +115,7 @@ export function useVideoUpload() {
       setProgress(0);
 
       try {
-        const paramsRes = await fetch('/api/upload/cloudinary-params', { method: 'POST' });
-        const params = await paramsRes.json();
-
-        if (paramsRes.status === 429) {
-          throw new Error(params.error || 'Too many upload requests. Try again in a minute.');
-        }
-        if (!params.enabled && params.error) {
-          throw new Error(params.error);
-        }
-
-        let video;
-        if (params.enabled) {
-          video = await uploadDirectToCloudinary(params, file, visibility, setProgress);
-        } else {
-          video = await uploadViaServer(file, visibility, setProgress);
-        }
-
+        const video = await uploadViaServer(file, visibility, setProgress);
         setProgress(100);
         fetchVideos(1);
         fetchStats();

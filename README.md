@@ -1,6 +1,6 @@
 # 🎬 Video Upload App
 
-A full-featured video upload application built with **Next.js 14 (App Router)** and **Tailwind CSS**, integrated with **Cloudinary** and a local fallback.
+A full-featured video upload application built with **Next.js 14 (App Router)** and **Tailwind CSS**, with **GitHub** storage (optional) and a **local** `/public/uploads` fallback.
 
 ---
 
@@ -9,7 +9,7 @@ A full-featured video upload application built with **Next.js 14 (App Router)** 
 - Drag & drop or click-to-browse video upload
 - Real-time upload progress bar
 - Video preview before upload
-- Cloudinary integration with local `/public/uploads` fallback
+- Video storage: GitHub repository (optional) or local `/public/uploads`
 - Video gallery with player, copy link, and delete
 - Toast notifications
 - Responsive dark UI with animations
@@ -25,21 +25,7 @@ cd video-upload-app
 npm install
 ```
 
-### 2. Configure Cloudinary
-
-Open `.env.local` and fill in your Cloudinary credentials:
-
-```env
-CLOUDINARY_CLOUD_NAME=your_cloud_name
-CLOUDINARY_API_KEY=your_api_key
-CLOUDINARY_API_SECRET=your_api_secret
-```
-
-Get your credentials from: https://cloudinary.com/console
-
-> **Note:** If you skip this step, uploads will be saved locally in `/public/uploads` automatically.
-
-### 2.1 Configure GitHub uploads (optional)
+### 2. Configure GitHub uploads (optional)
 
 Videos can be pushed to **one** GitHub repository. You need a token with **Contents: Read and write** on that repo, plus the owner and repo name.
 
@@ -53,7 +39,7 @@ GITHUB_UPLOAD_BRANCH=main
 GITHUB_UPLOAD_FOLDER=uploads
 ```
 
-`GITHUB_UPLOAD_OWNER` and `GITHUB_UPLOAD_REPO` are **required** when using GitHub upload. If the token is set but these are missing, the app falls back to local files only.
+`GITHUB_UPLOAD_OWNER` and `GITHUB_UPLOAD_REPO` are **required** when using GitHub upload. If GitHub is not configured or upload fails, the app saves videos under `/public/uploads`.
 
 > **Token:** create it while logged in as a user that can push to `themiifyHG/uploavideos` (or use a fine-grained token with access to that repository only).
 
@@ -79,13 +65,13 @@ npm start
 ```
 video-upload-app/
 ├── app/
-│   ├── api/upload/route.js      # Upload API (Cloudinary + local fallback)
+│   ├── api/upload/route.js      # Upload API (GitHub + local fallback)
 │   ├── components/
 │   │   ├── VideoUpload.jsx      # Drag & drop upload area
 │   │   ├── VideoPreview.jsx     # Preview before upload
 │   │   ├── ProgressBar.jsx      # Animated progress bar
 │   │   └── VideoGallery.jsx     # Gallery with player & actions
-│   ├── lib/cloudinary.js        # Cloudinary SDK config
+│   ├── lib/githubUpload.js     # GitHub upload helper
 │   ├── hooks/useVideoUpload.js  # Upload logic with XHR progress
 │   ├── page.js                  # Main page
 │   ├── layout.js

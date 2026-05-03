@@ -2,7 +2,7 @@ import './globals.css';
 
 export const metadata = {
   title: 'Video Upload App',
-  description: 'Upload and share videos powered by Cloudinary',
+  description: 'Upload and share videos (GitHub or local storage)',
 };
 
 export default function RootLayout({ children }) {

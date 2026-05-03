@@ -73,18 +73,20 @@ export default function VideoGallery({ videos, onCopy, onTrackView, pagination, 
               <p className="text-xs text-white/50 mt-1">👁 {video.views || 0} views</p>
 
               {video.source && (
-                <span className={`mt-2 inline-block text-xs px-2 py-0.5 rounded-full font-medium ${
-                  video.source === 'cloudinary'
-                    ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
-                    : video.source === 'github'
-                    ? 'bg-gray-500/20 text-gray-200 border border-gray-500/30'
-                    : 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/30'
-                }`}>
-                  {video.source === 'cloudinary'
-                    ? '☁️ Cloudinary'
-                    : video.source === 'github'
+                <span
+                  className={`mt-2 inline-block text-xs px-2 py-0.5 rounded-full font-medium ${
+                    video.source === 'github'
+                      ? 'bg-gray-500/20 text-gray-200 border border-gray-500/30'
+                      : video.source === 'local'
+                        ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/30'
+                        : 'bg-white/10 text-white/70 border border-white/20'
+                  }`}
+                >
+                  {video.source === 'github'
                     ? '🐙 GitHub'
-                    : '💾 Local'}
+                    : video.source === 'local'
+                      ? '💾 Local'
+                      : `📦 ${video.source}`}
                 </span>
               )}
               <span className="mt-2 ml-2 inline-block text-xs px-2 py-0.5 rounded-full bg-white/10 text-white/70 border border-white/20">

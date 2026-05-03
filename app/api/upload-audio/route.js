@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import { mkdir, writeFile } from 'fs/promises';
 import path from 'path';
 import crypto from 'crypto';
-import cloudinary, { uploadToCloudinary } from '../../lib/cloudinary';
 import { getClientIp, rateLimit } from '../../lib/rateLimit';
 
 const ALLOWED_AUDIO_TYPES = ['audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/x-wav', 'audio/ogg', 'audio/webm'];
@@ -23,9 +22,6 @@ export async function POST(request) {
 
     const formData = await request.formData();
     const file = formData.get('audio');
-    // #region agent log
-    fetch('http://127.0.0.1:7531/ingest/2bbb9be2-9e09-4d6e-beb1-e45041ba6453',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'1e3807'},body:JSON.stringify({sessionId:'1e3807',runId:'pre-fix',hypothesisId:'H5',location:'app/api/upload-audio/route.js:26',message:'audio upload payload received',data:{hasFile:Boolean(file),type:file?.type || 'none',size:file?.size || 0},timestamp:Date.now()})}).catch(()=>{});
-    // #endregion
     if (!file) {
       return NextResponse.json({ success: false, error: 'No audio/video file provided.' }, { status: 400 });
     }
@@ -42,44 +38,6 @@ export async function POST(request) {
     const buffer = Buffer.from(bytes);
     const isVideoInput = ALLOWED_VIDEO_FOR_AUDIO.includes(file.type);
 
-    if (
-      process.env.CLOUDINARY_CLOUD_NAME &&
-      process.env.CLOUDINARY_API_KEY &&
-      process.env.CLOUDINARY_API_SECRET
-    ) {
-      try {
-        const publicId = `audio_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
-        const uploadResult = await uploadToCloudinary(buffer, {
-          resource_type: 'video',
-          public_id: publicId,
-          folder: 'audio-uploads',
-        });
-
-        const audioUrl = cloudinary.url(uploadResult.public_id, {
-          resource_type: 'video',
-          format: 'mp3',
-        });
-
-        return NextResponse.json({
-          success: true,
-          item: {
-            id: crypto.randomUUID(),
-            type: 'audio',
-            source: 'cloudinary',
-            url: audioUrl,
-            public_id: uploadResult.public_id,
-            fromVideo: isVideoInput,
-            name: file.name,
-            size: file.size,
-          },
-        });
-      } catch (cloudinaryError) {
-        // #region agent log
-        fetch('http://127.0.0.1:7531/ingest/2bbb9be2-9e09-4d6e-beb1-e45041ba6453',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'1e3807'},body:JSON.stringify({sessionId:'1e3807',runId:'post-fix',hypothesisId:'H5',location:'app/api/upload-audio/route.js:72',message:'audio cloudinary fallback triggered',data:{errorName:cloudinaryError?.name || 'unknown',httpCode:cloudinaryError?.http_code || null},timestamp:Date.now()})}).catch(()=>{});
-        // #endregion
-      }
-    }
-
     const uploadsDir = path.join(process.cwd(), 'public', 'uploads', 'audio');
     await mkdir(uploadsDir, { recursive: true });
     const extension = file.type.includes('wav') ? 'wav' : file.type.includes('ogg') ? 'ogg' : 'mp3';
@@ -94,16 +52,13 @@ export async function POST(request) {
         source: 'local',
         url: `/uploads/audio/${filename}`,
         public_id: filename,
-        fromVideo: false,
+        fromVideo: isVideoInput,
         name: file.name,
         size: file.size,
       },
     });
   } catch (error) {
     console.error('Audio upload error:', error);
-    // #region agent log
-    fetch('http://127.0.0.1:7531/ingest/2bbb9be2-9e09-4d6e-beb1-e45041ba6453',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'1e3807'},body:JSON.stringify({sessionId:'1e3807',runId:'pre-fix',hypothesisId:'H5',location:'app/api/upload-audio/route.js:95',message:'audio upload failed',data:{errorName:error?.name || 'unknown',errorMessage:error?.message || 'unknown'},timestamp:Date.now()})}).catch(()=>{});
-    // #endregion
     return NextResponse.json({ success: false, error: 'Audio upload failed.' }, { status: 500 });
   }
 }

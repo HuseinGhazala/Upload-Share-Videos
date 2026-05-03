@@ -1,8 +1,4 @@
 /** @type {import('next').NextConfig} */
-const nextConfig = {
-  experimental: {
-    serverComponentsExternalPackages: ['cloudinary'],
-  },
-};
+const nextConfig = {};
 
 module.exports = nextConfig;
