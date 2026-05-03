@@ -1,5 +1,6 @@
 'use client';
 import { useState, useCallback, useEffect } from 'react';
+import { VIDEO_UPLOAD_CHUNK_BYTES } from '../lib/uploadChunkSize';
 
 function messageForUploadFailure(xhr) {
   let jsonError = '';
@@ -19,6 +20,58 @@ function messageForUploadFailure(xhr) {
   }
   if (jsonError) return jsonError;
   return `Server error: ${xhr.status}`;
+}
+
+/** Many shared hosts return 503 on one large POST; small chunk requests usually succeed. */
+async function uploadChunked(file, visibility, setProgress) {
+  const startRes = await fetch('/api/upload/chunked/start', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      fileName: file.name,
+      size: file.size,
+      mimeType: file.type,
+      visibility,
+    }),
+  });
+  const start = await startRes.json().catch(() => ({}));
+  if (!startRes.ok || !start.success) {
+    throw new Error(start.error || `Could not start upload (${startRes.status})`);
+  }
+
+  const { sessionId, sessionToken, chunkSizeBytes, totalChunks } = start;
+
+  for (let i = 0; i < totalChunks; i++) {
+    const startByte = i * chunkSizeBytes;
+    const endByte = Math.min(startByte + chunkSizeBytes, file.size);
+    const chunk = file.slice(startByte, endByte);
+
+    const fd = new FormData();
+    fd.append('sessionId', sessionId);
+    fd.append('sessionToken', sessionToken);
+    fd.append('index', String(i));
+    fd.append('part', chunk, `part-${i}`);
+
+    const partRes = await fetch('/api/upload/chunked/part', { method: 'POST', body: fd });
+    const partJson = await partRes.json().catch(() => ({}));
+    if (!partRes.ok || !partJson.success) {
+      throw new Error(partJson.error || `Chunk ${i + 1}/${totalChunks} failed (${partRes.status})`);
+    }
+
+    setProgress(Math.min(95, Math.round(((i + 1) / totalChunks) * 95)));
+  }
+
+  const doneRes = await fetch('/api/upload/chunked/complete', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ sessionId, sessionToken }),
+  });
+  const done = await doneRes.json().catch(() => ({}));
+  if (!doneRes.ok || !done.success) {
+    throw new Error(done.error || 'Could not finalize upload');
+  }
+  setProgress(100);
+  return done.video;
 }
 
 function uploadViaServer(file, visibility, setProgress) {
@@ -115,7 +168,10 @@ export function useVideoUpload() {
       setProgress(0);
 
       try {
-        const video = await uploadViaServer(file, visibility, setProgress);
+        const video =
+          file.size > VIDEO_UPLOAD_CHUNK_BYTES
+            ? await uploadChunked(file, visibility, setProgress)
+            : await uploadViaServer(file, visibility, setProgress);
         setProgress(100);
         fetchVideos(1);
         fetchStats();

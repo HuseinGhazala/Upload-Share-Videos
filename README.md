@@ -10,6 +10,7 @@ A full-featured video upload application built with **Next.js 14 (App Router)** 
 - Real-time upload progress bar
 - Video preview before upload
 - Video storage: GitHub repository (optional) or local `/public/uploads`
+- Files larger than 512KB upload in small chunks (reduces **503** errors on shared hosting)
 - Video gallery with player, copy link, and delete
 - Toast notifications
 - Responsive dark UI with animations
