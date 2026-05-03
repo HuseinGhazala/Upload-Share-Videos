@@ -41,37 +41,19 @@ Get your credentials from: https://cloudinary.com/console
 
 ### 2.1 Configure GitHub uploads (optional)
 
-To upload videos directly to the GitHub repository `HuseinGhazala/vide`, add:
+Videos can be pushed to **one** GitHub repository. You need a token with **Contents: Read and write** on that repo, plus the owner and repo name.
 
 ```env
-GITHUB_UPLOAD_TOKEN=your_github_token_with_contents_write
-GITHUB_UPLOAD_OWNER=HuseinGhazala
-GITHUB_UPLOAD_REPO=vide
+GITHUB_UPLOAD_TOKEN=your_token
+GITHUB_UPLOAD_OWNER=your_username_or_org
+GITHUB_UPLOAD_REPO=your_repo_name
 GITHUB_UPLOAD_BRANCH=main
 GITHUB_UPLOAD_FOLDER=uploads
 ```
 
-When token is configured, the app tries GitHub upload before local fallback.
+`GITHUB_UPLOAD_OWNER` and `GITHUB_UPLOAD_REPO` are **required** when using GitHub upload. If the token is set but these are missing, the app falls back to local files only.
 
-### 2.2 Second GitHub repository (optional)
-
-To also push the same file to another repository, set (at minimum) `GITHUB_UPLOAD2_REPO`. The same upload filename is used in both repos.
-
-**Same GitHub account / same owner:** you can omit `GITHUB_UPLOAD2_TOKEN` — the app reuses `GITHUB_UPLOAD_TOKEN`.
-
-**Different GitHub account or organization:** you **must** create a token **on that account** (Personal Access Token or fine-grained token with **Contents: Read and write** on that repo), then set:
-
-```env
-GITHUB_UPLOAD2_OWNER=username_or_org_that_owns_the_second_repo
-GITHUB_UPLOAD2_REPO=your-second-repo
-GITHUB_UPLOAD2_TOKEN=token_from_that_account
-GITHUB_UPLOAD2_BRANCH=main
-GITHUB_UPLOAD2_FOLDER=uploads
-```
-
-Using only `GITHUB_UPLOAD_TOKEN` will **not** upload to someone else’s repo (GitHub returns 403/404).
-
-In the gallery, use **Raw (repo 1)** and **Raw (repo 2)** to copy the matching links.
+> **Migrate from a “test” setup:** put the values you used for the second account/repo into `GITHUB_UPLOAD_*` and **remove** all `GITHUB_UPLOAD2_*` variables from your host. Redeploy after saving.
 
 ### 3. Run the development server
 

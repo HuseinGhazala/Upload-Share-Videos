@@ -130,11 +130,6 @@ export async function POST(request) {
           ghOwner: githubResult.owner,
           ghRepo: githubResult.repo,
           ghBranch: githubResult.branch,
-          rawUrl2: githubResult.secondary?.sourceUrl || '',
-          public_id2: githubResult.secondary?.publicId || '',
-          gh2Owner: githubResult.secondary?.owner || '',
-          gh2Repo: githubResult.secondary?.repo || '',
-          gh2Branch: githubResult.secondary?.branch || '',
           url: `/api/videos/${baseVideo.id}/stream`,
           thumbnailUrl: '',
         });
