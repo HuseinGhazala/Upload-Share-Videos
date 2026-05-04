@@ -10,6 +10,14 @@ const SUPABASE_URL =
 const SUPABASE_ANON_KEY =
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? 'sb_publishable_BUILD_PLACEHOLDER';
 
+/** يمنع كاش HTML/RSC قديم يشير لـ chunks من build سابق (ChunkLoadError بعد النشر). */
+function noStoreDocumentHeaders(res) {
+  res.headers.set(
+    'Cache-Control',
+    'private, no-cache, no-store, max-age=0, must-revalidate'
+  );
+}
+
 export async function middleware(request) {
   const { pathname } = request.nextUrl;
 
@@ -24,13 +32,17 @@ export async function middleware(request) {
       if (raw && raw.startsWith('/admin') && !raw.startsWith('//')) {
         dest = raw;
       }
-      return NextResponse.redirect(new URL(dest, request.url));
+      const redirect = NextResponse.redirect(new URL(dest, request.url));
+      noStoreDocumentHeaders(redirect);
+      return redirect;
     }
 
     if (!isLoginPath && !sessionOk) {
       const login = new URL('/admin/login', request.url);
       login.searchParams.set('next', pathname + request.nextUrl.search);
-      return NextResponse.redirect(login);
+      const redirect = NextResponse.redirect(login);
+      noStoreDocumentHeaders(redirect);
+      return redirect;
     }
   }
 
@@ -57,6 +69,7 @@ export async function middleware(request) {
 
   await supabase.auth.getUser();
 
+  noStoreDocumentHeaders(supabaseResponse);
   return supabaseResponse;
 }
 

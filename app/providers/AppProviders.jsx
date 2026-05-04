@@ -1,7 +1,13 @@
 'use client';
 
+import ChunkLoadRecovery from '@/app/components/ChunkLoadRecovery';
 import { AuthProvider } from './AuthProvider';
 
 export default function AppProviders({ children }) {
-  return <AuthProvider>{children}</AuthProvider>;
+  return (
+    <AuthProvider>
+      <ChunkLoadRecovery />
+      {children}
+    </AuthProvider>
+  );
 }
