@@ -90,10 +90,6 @@ export default function PricingPage() {
               طلبات إيصال الدفع
             </Link>
           </div>
-          <p className="mt-4 text-xs text-white/40">
-            بعد إدخال رمز لوحة الإدارة (اضبط <code dir="ltr">ADMIN_PANEL_PIN</code>؛ الافتراضي محلي{' '}
-            <code dir="ltr">123456</code>).
-          </p>
         </div>
       </div>
     </main>

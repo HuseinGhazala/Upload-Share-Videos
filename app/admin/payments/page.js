@@ -29,8 +29,11 @@ export default function AdminPaymentsPage() {
         <PaymentQueue />
 
         <p className="mt-10 text-xs text-white/35 text-center leading-relaxed">
-          تأكد من تشغيل ترحيل قاعدة البيانات وإنشاء حاوية التخزين{' '}
-          <code className="text-white/50">payment-receipts</code> في Supabase إن لزم.
+          ترحيل قاعدة البيانات يضيف الجدول وحاوية التخزين دفعة واحدة (
+          <code className="text-white/50">20260504160000_payment_submissions.sql</code>
+          ). راجع أوامر <code className="text-white/50">npm run db:link</code> و{' '}
+          <code className="text-white/50">npm run db:push</code> في تعليقات{' '}
+          <code className="text-white/50">.env.example</code>.
         </p>
       </div>
     </main>

@@ -44,10 +44,6 @@ export default function AdminBillingPage() {
             <code className="text-indigo-300">profiles</code> (<code className="text-indigo-300">plan_key</code> و{' '}
             <code className="text-indigo-300">upload_credits_remaining</code>).
           </p>
-          <p className="text-amber-200/80">
-            لوحة الإدارة محمية برمز الدخول (افتراضي <code dir="ltr" className="text-xs">123456</code> — غيّره
-            بـ <code dir="ltr" className="text-xs">ADMIN_PANEL_PIN</code>).
-          </p>
         </div>
       </div>
     </main>
