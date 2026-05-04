@@ -3,7 +3,6 @@ import { createClient } from '@supabase/supabase-js';
 import AdminNav from '../AdminNav';
 import { PLAN_KEYS, planLabelAr } from '@/app/lib/plans';
 import SubscriberRowActions from './SubscriberRowActions';
-import { readSupabaseAdminEnv } from '@/app/lib/supabaseServerEnv';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,33 +24,20 @@ function hasActivePackage(row) {
 }
 
 export default async function AdminSubscribersPage() {
-  const { url, serviceKey, missing } = readSupabaseAdminEnv();
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!url || !serviceKey) {
     return (
       <main className="min-h-screen bg-[#050810] text-white px-4 py-12">
-        <div className="max-w-4xl mx-auto text-center space-y-4">
+        <div className="max-w-4xl mx-auto text-center">
           <AdminNav current="subscribers" />
           <p className="text-red-300">
-            الخادم لا يقرأ المتغيرات التالية من البيئة:{' '}
-            {missing.map((k) => (
-              <code key={k} className="text-white mx-1">
-                {k}
-              </code>
-            ))}
+            غير مضبوط: أضف <code className="text-white">SUPABASE_SERVICE_ROLE_KEY</code> و{' '}
+            <code className="text-white">NEXT_PUBLIC_SUPABASE_URL</code> في{' '}
+            <code className="text-white">.env.local</code>
           </p>
-          <p className="text-white/55 text-sm leading-relaxed max-w-lg mx-auto">
-            تأكد أن الملف <code className="text-white/80">.env.local</code> في نفس مجلد <code className="text-white/80">package.json</code>،
-            ثم <strong className="text-white/80">أوقف</strong> خادم التطوير (<code className="text-white/70">Ctrl+C</code>) و<strong className="text-white/80">شغّله من جديد</strong> (
-            <code className="text-white/70">npm run dev</code>). إن استمرت المشكلة احذف مجلد{' '}
-            <code className="text-white/70">.next</code> ثم أعد التشغيل. في الإنتاج (مثل Vercel) أضف نفس الأسماء في إعدادات Environment للمشروع.
-          </p>
-          {process.env.NODE_ENV === 'development' && (
-            <p className="text-xs text-indigo-300/90">
-              للتشخيص افتح: <code dir="ltr">/api/dev/env-check</code>
-            </p>
-          )}
-          <Link href="/pricing" className="inline-block mt-4 text-emerald-400 hover:text-emerald-300">
+          <Link href="/pricing" className="inline-block mt-6 text-emerald-400 hover:text-emerald-300">
             ← العودة للأسعار
           </Link>
         </div>
