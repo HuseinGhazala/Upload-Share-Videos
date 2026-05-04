@@ -4,23 +4,26 @@ import { writeFile, mkdir } from 'fs/promises';
 import { addVideo } from './videoStore';
 import { isGitHubUploadConfigured, uploadVideoToGitHub } from './githubUpload';
 import { visibilitySchema } from './validation';
+import { FREE_MAX_VIDEO_BYTES } from './subscription';
 
 export const ALLOWED_VIDEO_TYPES = ['video/mp4', 'video/webm', 'video/quicktime'];
-export const MAX_VIDEO_SIZE = 50 * 1024 * 1024;
+/** Legacy default max (matches free tier). */
+export const MAX_VIDEO_SIZE = FREE_MAX_VIDEO_BYTES;
 
-export function validateVideoPayload({ name, size, mimeType, visibility }) {
+export function validateVideoPayload({ name, size, mimeType, visibility }, maxVideoBytes = MAX_VIDEO_SIZE) {
   if (!name || typeof name !== 'string' || !name.trim()) {
-    return { error: 'Invalid file name.' };
+    return { error: 'اسم الملف غير صالح.' };
   }
   const visibilityResult = visibilitySchema.safeParse(visibility);
   if (!visibilityResult.success) {
-    return { error: 'Invalid visibility value.' };
+    return { error: 'إعداد «الظهور» غير صالح.' };
   }
   if (!ALLOWED_VIDEO_TYPES.includes(mimeType)) {
-    return { error: 'Invalid file type. Allowed: mp4, webm, mov' };
+    return { error: 'نوع الملف غير مدعوم. المسموح: mp4، webm، mov' };
   }
-  if (size > MAX_VIDEO_SIZE) {
-    return { error: 'File too large. Max size is 50MB' };
+  if (size > maxVideoBytes) {
+    const mb = Math.round(maxVideoBytes / (1024 * 1024));
+    return { error: `الملف يتجاوز الحد المسموح لباقتك (${mb} ميجابايت).` };
   }
   return { visibility: visibilityResult.data };
 }
@@ -28,8 +31,11 @@ export function validateVideoPayload({ name, size, mimeType, visibility }) {
 /**
  * GitHub if configured, else local `public/uploads`. Caller validates payload first.
  */
-export async function persistVideoBuffer(buffer, { name, size, mimeType, visibility }) {
-  const check = validateVideoPayload({ name, size, mimeType, visibility });
+export async function persistVideoBuffer(
+  buffer,
+  { name, size, mimeType, visibility, ownerId, maxVideoBytes }
+) {
+  const check = validateVideoPayload({ name, size, mimeType, visibility }, maxVideoBytes ?? MAX_VIDEO_SIZE);
   if (check.error) {
     throw new Error(check.error);
   }
@@ -43,6 +49,7 @@ export async function persistVideoBuffer(buffer, { name, size, mimeType, visibil
     uploadedAt: new Date().toISOString(),
     visibility: visibilityData,
     views: 0,
+    ownerId: ownerId || null,
     source: 'local',
     url: '',
     rawUrl: '',

@@ -15,7 +15,9 @@ export default function VideoPreview({ file }) {
 
   if (!file) return null;
 
-  const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+  const sizeMB = new Intl.NumberFormat('ar-SA', { maximumFractionDigits: 2 }).format(
+    file.size / (1024 * 1024)
+  );
 
   return (
     <div className="mt-4 rounded-2xl overflow-hidden border border-white/10 bg-black/30">
@@ -28,10 +30,10 @@ export default function VideoPreview({ file }) {
       <div className="px-4 py-3 flex items-center justify-between">
         <div>
           <p className="text-sm font-medium text-white truncate max-w-xs">{file.name}</p>
-          <p className="text-xs text-white/50 mt-0.5">{sizeMB} MB</p>
+          <p className="text-xs text-white/50 mt-0.5">{sizeMB} ميجابايت</p>
         </div>
-        <span className="text-xs px-2 py-1 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
-          Preview
+        <span className="text-xs px-2 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+          معاينة
         </span>
       </div>
     </div>

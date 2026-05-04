@@ -1,14 +1,25 @@
 import './globals.css';
+import AppProviders from './providers/AppProviders';
+import { Noto_Sans_Arabic } from 'next/font/google';
+
+const notoArabic = Noto_Sans_Arabic({
+  subsets: ['arabic'],
+  weight: ['400', '500', '600', '700'],
+  display: 'swap',
+});
 
 export const metadata = {
-  title: 'Video Upload App',
-  description: 'Upload and share videos (GitHub or local storage)',
+  title: 'منصّة رفع الفيديو — السعودية',
+  description:
+    'منصّة سعودية لرفع ومشاركة الفيديوهات بباقات بالريال السعودي، مع حسابات آمنة عبر Supabase.',
 };
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
-      <body className="antialiased">{children}</body>
+    <html lang="ar" dir="rtl">
+      <body className={`${notoArabic.className} antialiased`}>
+        <AppProviders>{children}</AppProviders>
+      </body>
     </html>
   );
 }

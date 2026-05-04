@@ -7,4 +7,8 @@ export const paginationSchema = z.object({
   limit: z.coerce.number().int().min(1).max(24).default(6),
   visibility: visibilitySchema.optional(),
   accessToken: z.string().trim().optional(),
+  mine: z
+    .string()
+    .optional()
+    .transform((v) => v === '1' || v === 'true'),
 });

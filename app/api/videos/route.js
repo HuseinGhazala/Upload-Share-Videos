@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getAllVideos } from '../../lib/videoStore';
 import { getClientIp, rateLimit } from '../../lib/rateLimit';
 import { paginationSchema } from '../../lib/validation';
+import { getOptionalAuthUser } from '../../lib/authSession';
 
 function canAccess(video, accessToken) {
   if (video.visibility === 'public') return true;
@@ -21,13 +22,47 @@ export async function GET(request) {
     limit: url.searchParams.get('limit') ?? 6,
     visibility: url.searchParams.get('visibility') ?? undefined,
     accessToken: url.searchParams.get('accessToken') ?? undefined,
+    mine: url.searchParams.get('mine') ?? undefined,
   });
 
   if (!parseResult.success) {
     return NextResponse.json({ success: false, error: 'Invalid query params.' }, { status: 400 });
   }
 
-  const { page, limit, visibility, accessToken } = parseResult.data;
+  const { page, limit, visibility, accessToken, mine } = parseResult.data;
+
+  if (mine) {
+    const user = await getOptionalAuthUser();
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: 'يجب تسجيل الدخول لمشاهدة فيديوهاتك.' },
+        { status: 401 }
+      );
+    }
+
+    let videos = await getAllVideos();
+    videos = videos.filter((v) => v.ownerId === user.id);
+
+    const total = videos.length;
+    const totalPages = Math.max(1, Math.ceil(total / limit));
+    const safePage = Math.min(page, totalPages);
+    const start = (safePage - 1) * limit;
+    const items = videos.slice(start, start + limit);
+
+    return NextResponse.json({
+      success: true,
+      items,
+      pagination: {
+        page: safePage,
+        limit,
+        total,
+        totalPages,
+        hasNext: safePage < totalPages,
+        hasPrev: safePage > 1,
+      },
+    });
+  }
+
   let videos = await getAllVideos();
   if (visibility) videos = videos.filter((v) => v.visibility === visibility);
   videos = videos.filter((v) => canAccess(v, accessToken));

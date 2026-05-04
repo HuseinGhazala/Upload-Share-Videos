@@ -1,13 +1,16 @@
 'use client';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import VideoUpload from './components/VideoUpload';
 import VideoGallery from './components/VideoGallery';
 import MediaLab from './components/MediaLab';
+import AppNavbar from './components/AppNavbar';
 import { useVideoUpload } from './hooks/useVideoUpload';
+import { useAuth } from './providers/AuthProvider';
+import { MAX_VIDEO_BYTES_PER_UPLOAD } from '@/app/lib/plans';
 
 function Toast({ toasts }) {
   return (
-    <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-2">
+    <div className="fixed bottom-6 start-6 z-50 flex flex-col gap-2 max-w-sm">
       {toasts.map((t) => (
         <div
           key={t.id}
@@ -24,6 +27,7 @@ function Toast({ toasts }) {
 }
 
 export default function HomePage() {
+  const { user, quota } = useAuth();
   const {
     upload,
     progress,
@@ -35,8 +39,14 @@ export default function HomePage() {
     pagination,
     setPage,
     trackView,
+    listScope,
+    setListScope,
   } = useVideoUpload();
   const [toasts, setToasts] = useState([]);
+
+  useEffect(() => {
+    if (!user) setListScope('public');
+  }, [user, setListScope]);
 
   const showToast = useCallback((message, type = 'success') => {
     const id = Date.now();
@@ -63,30 +73,40 @@ export default function HomePage() {
       // Keep original URL if parsing fails.
     }
     navigator.clipboard.writeText(fullUrl)
-      .then(() => showToast('📋 Link copied to clipboard!', 'success'))
-      .catch(() => showToast('Failed to copy link', 'error'));
+      .then(() => showToast('تم نسخ الرابط إلى الحافظة', 'success'))
+      .catch(() => showToast('تعذر نسخ الرابط', 'error'));
   }, [showToast]);
 
   return (
-    <main className="min-h-screen bg-[#0a0a12] text-white">
-      {/* Background */}
+    <main className="min-h-screen bg-[#050810] text-white">
+      {/* خلفية بلمسة ألوان وطنية خفيفة */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute -top-40 -left-40 w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl" />
-        <div className="absolute top-1/3 -right-40 w-96 h-96 bg-purple-600/20 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-96 h-96 bg-pink-600/10 rounded-full blur-3xl" />
+        <div className="absolute -top-40 start-0 w-96 h-96 bg-emerald-700/15 rounded-full blur-3xl" />
+        <div className="absolute -top-20 end-0 w-80 h-80 bg-indigo-600/18 rounded-full blur-3xl" />
+        <div className="absolute top-1/3 -start-40 w-96 h-96 bg-purple-600/15 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[28rem] h-96 bg-emerald-900/10 rounded-full blur-3xl" />
       </div>
 
       <div className="relative max-w-4xl mx-auto px-4 py-16">
+        <AppNavbar />
+
         {/* Header */}
         <div className="text-center mb-12">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-sm font-medium mb-6">
-            <span className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse" />
-            Video Upload Platform 🚀
+          <div className="inline-flex flex-wrap items-center justify-center gap-2 px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-emerald-300/95 text-sm font-medium mb-4">
+            <span className="text-base" aria-hidden>
+              🇸🇦
+            </span>
+            منصّة سعودية — أسعار بالريال السعودي
           </div>
-          <h1 className="text-4xl sm:text-5xl font-extrabold bg-gradient-to-br from-white via-indigo-200 to-purple-300 bg-clip-text text-transparent leading-tight">
-            Upload & Share Videos
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-sm font-medium mb-6">
+            <span className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse" />
+            رفع ومشاركة الفيديو
+          </div>
+          <h1 className="text-4xl sm:text-5xl font-extrabold bg-gradient-to-br from-white via-emerald-100/90 to-indigo-200 bg-clip-text text-transparent leading-tight">
+            ارفع فيديوهاتك وشاركها بثقة
           </h1>
-          <p className="mt-4 text-white/40 text-lg max-w-xl mx-auto">
+          <p className="mt-4 text-white/45 text-base sm:text-lg max-w-xl mx-auto leading-relaxed">
+            باقات واضحة بالريال السعودي، بدون تعقيد — مناسبة للمبدعين والأفراد والفرق داخل المملكة.
           </p>
         </div>
 
@@ -98,26 +118,31 @@ export default function HomePage() {
             progress={progress}
             error={error}
             onToast={showToast}
+            isLoggedIn={Boolean(user)}
+            canUpload={Boolean(user) && Boolean(quota?.uploadAllowed)}
+            maxUploadBytes={quota?.maxUploadBytes ?? MAX_VIDEO_BYTES_PER_UPLOAD}
           />
         </div>
 
         {stats && (
           <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div className="rounded-xl border border-white/10 bg-white/5 p-4">
-              <p className="text-xs text-white/50">Total Videos</p>
-              <p className="text-xl font-bold">{stats.totalVideos}</p>
+              <p className="text-xs text-white/50">عدد الفيديوهات</p>
+              <p className="text-xl font-bold tabular-nums">{stats.totalVideos}</p>
             </div>
             <div className="rounded-xl border border-white/10 bg-white/5 p-4">
-              <p className="text-xs text-white/50">Total Views</p>
-              <p className="text-xl font-bold">{stats.totalViews}</p>
+              <p className="text-xs text-white/50">إجمالي المشاهدات</p>
+              <p className="text-xl font-bold tabular-nums">{stats.totalViews}</p>
             </div>
             <div className="rounded-xl border border-white/10 bg-white/5 p-4">
-              <p className="text-xs text-white/50">Public</p>
-              <p className="text-xl font-bold">{stats.byVisibility.public}</p>
+              <p className="text-xs text-white/50">عامة</p>
+              <p className="text-xl font-bold tabular-nums">{stats.byVisibility.public}</p>
             </div>
             <div className="rounded-xl border border-white/10 bg-white/5 p-4">
-              <p className="text-xs text-white/50">Private + Unlisted</p>
-              <p className="text-xl font-bold">{stats.byVisibility.private + stats.byVisibility.unlisted}</p>
+              <p className="text-xs text-white/50">خاصة ومخفيّة</p>
+              <p className="text-xl font-bold tabular-nums">
+                {stats.byVisibility.private + stats.byVisibility.unlisted}
+              </p>
             </div>
           </div>
         )}
@@ -130,9 +155,21 @@ export default function HomePage() {
           pagination={pagination}
           onPageChange={setPage}
           loading={loadingList}
+          listScope={listScope}
+          onListScopeChange={setListScope}
+          sessionUser={user}
         />
 
-        <MediaLab onToast={showToast} />
+        <div className="mt-14 border-t border-white/10 pt-10">
+          <h2 className="text-xl font-bold text-white mb-2 flex items-center gap-2">
+            <span className="text-2xl" aria-hidden>
+              ✨
+            </span>
+            أدوات إضافية
+          </h2>
+          <p className="text-sm text-white/45 mb-6">معمل ضغط الصور ورفع الصوت — اختياري بجانب الفيديو.</p>
+          <MediaLab onToast={showToast} />
+        </div>
       </div>
 
       <Toast toasts={toasts} />

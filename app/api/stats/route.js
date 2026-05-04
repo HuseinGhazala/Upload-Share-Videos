@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getAllVideos } from '../../lib/videoStore';
 import { getClientIp, rateLimit } from '../../lib/rateLimit';
+import { getOptionalAuthUser } from '../../lib/authSession';
 
 export async function GET(request) {
   const ip = getClientIp(request);
@@ -9,7 +10,21 @@ export async function GET(request) {
     return NextResponse.json({ success: false, error: 'Too many requests.' }, { status: 429 });
   }
 
-  const videos = await getAllVideos();
+  const url = new URL(request.url);
+  const mine = url.searchParams.get('mine') === '1' || url.searchParams.get('mine') === 'true';
+
+  let videos = await getAllVideos();
+
+  if (mine) {
+    const user = await getOptionalAuthUser();
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: 'يجب تسجيل الدخول لعرض الإحصائيات الخاصة بك.' },
+        { status: 401 }
+      );
+    }
+    videos = videos.filter((v) => v.ownerId === user.id);
+  }
   const totalVideos = videos.length;
   const totalViews = videos.reduce((sum, item) => sum + (item.views || 0), 0);
   const totalSizeMb = videos.reduce((sum, item) => sum + (item.size || 0), 0) / (1024 * 1024);

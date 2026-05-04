@@ -10,3 +10,10 @@
 .animate-fade-in {
   animation: fade-in 0.3s ease forwards;
 }
+
+/* أرقام وحروف عربية متناسقة في RTL */
+html[dir='rtl'] input,
+html[dir='rtl'] select,
+html[dir='rtl'] textarea {
+  text-align: right;
+}

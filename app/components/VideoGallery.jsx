@@ -2,11 +2,23 @@
 import { useState } from 'react';
 
 function formatDate(iso) {
-  return new Date(iso).toLocaleString();
+  return new Date(iso).toLocaleString('ar-SA', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+    calendar: 'gregory',
+  });
 }
 
 function formatSize(bytes) {
-  return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+  const mb = bytes / (1024 * 1024);
+  return `${new Intl.NumberFormat('ar-SA', { maximumFractionDigits: 2 }).format(mb)} ميجابايت`;
+}
+
+function visibilityAr(v) {
+  if (v === 'public') return 'عام';
+  if (v === 'private') return 'خاص';
+  if (v === 'unlisted') return 'مخفي';
+  return v;
 }
 
 function getRawUrl(video) {
@@ -17,20 +29,63 @@ function getRawUrl(video) {
   return video.rawUrl || video.sourceUrl || video.url;
 }
 
-export default function VideoGallery({ videos, onCopy, onTrackView, pagination, onPageChange, loading }) {
+export default function VideoGallery({
+  videos,
+  onCopy,
+  onTrackView,
+  pagination,
+  onPageChange,
+  loading,
+  listScope = 'public',
+  onListScopeChange,
+  sessionUser = null,
+}) {
   const [playing, setPlaying] = useState(null);
 
-  if (!videos.length && !loading) return null;
+  const hideWhenEmpty = !videos.length && !loading && listScope !== 'mine';
+
+  if (hideWhenEmpty) return null;
+
+  const title = listScope === 'mine' ? 'فيديوهاتي' : 'الفيديوهات';
 
   return (
     <section className="mt-10">
-      <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-        <span className="text-2xl">🎬</span> Uploaded Videos
-        <span className="ml-2 text-sm font-normal bg-white/10 text-white/60 rounded-full px-2 py-0.5">
-          {pagination?.total || videos.length}
-        </span>
-      </h2>
-      {loading && <p className="text-sm text-white/50 mb-3">Loading videos...</p>}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+        <h2 className="text-xl font-bold text-white flex items-center gap-2">
+          <span className="text-2xl">🎬</span>
+          {title}
+          <span className="ms-2 text-sm font-normal bg-white/10 text-white/60 rounded-full px-2 py-0.5 tabular-nums">
+            {pagination?.total ?? videos.length}
+          </span>
+        </h2>
+        {sessionUser && onListScopeChange && (
+          <div className="flex rounded-xl border border-white/15 p-1 bg-white/5 shrink-0">
+            <button
+              type="button"
+              onClick={() => onListScopeChange('public')}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+                listScope !== 'mine' ? 'bg-indigo-600 text-white' : 'text-white/70 hover:text-white'
+              }`}
+            >
+              المتاحة للجميع
+            </button>
+            <button
+              type="button"
+              onClick={() => onListScopeChange('mine')}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+                listScope === 'mine' ? 'bg-indigo-600 text-white' : 'text-white/70 hover:text-white'
+              }`}
+            >
+              فيديوهاتي
+            </button>
+          </div>
+        )}
+      </div>
+
+      {!videos.length && !loading && listScope === 'mine' ? (
+        <p className="text-white/45 text-sm mb-4">لم ترفع أي فيديو بعد.</p>
+      ) : null}
+      {loading && <p className="text-sm text-white/50 mb-3">جاري تحميل الفيديوهات…</p>}
       <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {videos.map((video) => (
           <div
@@ -41,7 +96,7 @@ export default function VideoGallery({ videos, onCopy, onTrackView, pagination, 
               {video.thumbnailUrl ? (
                 <img
                   src={video.thumbnailUrl}
-                  alt={`${video.name} thumbnail`}
+                  alt={`صورة مصغّرة للفيديو`}
                   className="absolute inset-0 w-full h-full object-cover opacity-60"
                 />
               ) : null}
@@ -59,7 +114,7 @@ export default function VideoGallery({ videos, onCopy, onTrackView, pagination, 
               {playing !== video.id && (
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                   <div className="w-12 h-12 rounded-full bg-white/10 backdrop-blur flex items-center justify-center group-hover:bg-white/20 transition">
-                    <svg className="w-5 h-5 text-white ml-1" fill="currentColor" viewBox="0 0 20 20">
+                    <svg className="w-5 h-5 text-white translate-x-[1px]" fill="currentColor" viewBox="0 0 20 20">
                       <path d="M6.3 2.841A1.5 1.5 0 004 4.11v11.78a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
                     </svg>
                   </div>
@@ -70,7 +125,9 @@ export default function VideoGallery({ videos, onCopy, onTrackView, pagination, 
             <div className="p-4">
               <p className="text-sm font-semibold text-white truncate">{video.name}</p>
               <p className="text-xs text-white/40 mt-0.5">{formatSize(video.size)} · {formatDate(video.uploadedAt)}</p>
-              <p className="text-xs text-white/50 mt-1">👁 {video.views || 0} views</p>
+              <p className="text-xs text-white/50 mt-1">
+                👁 {new Intl.NumberFormat('ar-SA').format(video.views || 0)} مشاهدة
+              </p>
 
               {video.source && (
                 <span
@@ -85,12 +142,12 @@ export default function VideoGallery({ videos, onCopy, onTrackView, pagination, 
                   {video.source === 'github'
                     ? '🐙 GitHub'
                     : video.source === 'local'
-                      ? '💾 Local'
+                      ? '💾 تخزين محلي'
                       : `📦 ${video.source}`}
                 </span>
               )}
-              <span className="mt-2 ml-2 inline-block text-xs px-2 py-0.5 rounded-full bg-white/10 text-white/70 border border-white/20">
-                {video.visibility}
+              <span className="mt-2 ms-2 inline-block text-xs px-2 py-0.5 rounded-full bg-white/10 text-white/70 border border-white/20">
+                {visibilityAr(video.visibility)}
               </span>
 
               <div className="flex flex-wrap gap-2 mt-3">
@@ -101,7 +158,7 @@ export default function VideoGallery({ videos, onCopy, onTrackView, pagination, 
                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                   </svg>
-                  Copy Link
+                  نسخ الرابط
                 </button>
                 <button
                   onClick={() => onCopy(getRawUrl(video))}
@@ -110,7 +167,7 @@ export default function VideoGallery({ videos, onCopy, onTrackView, pagination, 
                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 010 5.656l-3 3a4 4 0 11-5.656-5.656l1.5-1.5m6.328-1.172a4 4 0 010-5.656l3-3a4 4 0 115.656 5.656l-1.5 1.5" />
                   </svg>
-                  Copy Raw URL
+                  نسخ الرابط المباشر
                 </button>
                 <button
                   onClick={() => onCopy(`${video.url}${video.visibility === 'public' ? '' : `?accessToken=${video.accessToken}`}`)}
@@ -119,7 +176,7 @@ export default function VideoGallery({ videos, onCopy, onTrackView, pagination, 
                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                   </svg>
-                  Copy Access Link
+                  نسخ رابط المشاهدة
                 </button>
               </div>
             </div>
@@ -133,17 +190,17 @@ export default function VideoGallery({ videos, onCopy, onTrackView, pagination, 
             disabled={!pagination.hasPrev}
             className="px-3 py-2 text-sm rounded-lg border border-white/20 text-white/80 disabled:opacity-40"
           >
-            Prev
+            السابق
           </button>
-          <span className="px-3 py-2 text-sm text-white/70">
-            Page {pagination.page} / {pagination.totalPages}
+          <span className="px-3 py-2 text-sm text-white/70 tabular-nums">
+            صفحة {pagination.page} من {pagination.totalPages}
           </span>
           <button
             onClick={() => onPageChange(Math.min(pagination.totalPages, pagination.page + 1))}
             disabled={!pagination.hasNext}
             className="px-3 py-2 text-sm rounded-lg border border-white/20 text-white/80 disabled:opacity-40"
           >
-            Next
+            التالي
           </button>
         </div>
       )}

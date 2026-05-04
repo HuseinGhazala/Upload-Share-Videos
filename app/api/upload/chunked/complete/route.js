@@ -5,6 +5,10 @@ import { getClientIp, rateLimit } from '../../../../lib/rateLimit';
 import { persistVideoBuffer } from '../../../../lib/completeVideoUpload';
 import { chunkTempRoot } from '../../../../lib/chunkedUploadConfig';
 import { cleanupExpiredChunkSessions } from '../../../../lib/chunkCleanup';
+import {
+  getAuthenticatedUploadContext,
+  consumeUploadCreditAfterSuccessfulSave,
+} from '../../../../lib/authSession';
 
 export async function POST(request) {
   try {
@@ -14,6 +18,20 @@ export async function POST(request) {
       return NextResponse.json(
         { success: false, error: 'Too many upload requests. Try again in a minute.' },
         { status: 429 }
+      );
+    }
+
+    const { user, uploadAllowed } = await getAuthenticatedUploadContext();
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: 'يجب تسجيل الدخول لإنهاء الرفع.' },
+        { status: 401 }
+      );
+    }
+    if (!uploadAllowed) {
+      return NextResponse.json(
+        { success: false, error: 'لا يوجد رصيد رفع لإكمال هذه العملية.' },
+        { status: 403 }
       );
     }
 
@@ -34,6 +52,10 @@ export async function POST(request) {
 
     if (manifest.sessionToken !== sessionToken) {
       return NextResponse.json({ success: false, error: 'Invalid session.' }, { status: 403 });
+    }
+
+    if (!manifest.ownerId || manifest.ownerId !== user.id) {
+      return NextResponse.json({ success: false, error: 'هذه الجلسة لا تخص حسابك.' }, { status: 403 });
     }
 
     const parts = [];
@@ -62,12 +84,23 @@ export async function POST(request) {
       size: manifest.size,
       mimeType: manifest.mimeType,
       visibility: manifest.visibility,
+      ownerId: manifest.ownerId,
+      maxVideoBytes: manifest.maxUploadBytes,
     });
+
+    const consumed = await consumeUploadCreditAfterSuccessfulSave();
+    if (!consumed.ok) {
+      console.error('Chunked upload saved but credit consume failed:', consumed.error);
+    }
 
     await rm(dir, { recursive: true, force: true });
     await cleanupExpiredChunkSessions();
 
-    return NextResponse.json({ success: true, video });
+    return NextResponse.json({
+      success: true,
+      video,
+      ...(consumed.ok ? {} : { creditWarning: true }),
+    });
   } catch (e) {
     console.error('chunked/complete:', e);
     return NextResponse.json(

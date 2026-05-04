@@ -7,8 +7,10 @@ import { validateVideoPayload } from '../../../../lib/completeVideoUpload';
 import { chunkTempRoot } from '../../../../lib/chunkedUploadConfig';
 import { VIDEO_UPLOAD_CHUNK_BYTES } from '../../../../lib/uploadChunkSize';
 import { cleanupExpiredChunkSessions } from '../../../../lib/chunkCleanup';
+import { getAuthenticatedUploadContext } from '../../../../lib/authSession';
 
-const MAX_CHUNKS = 120; // 50MB / 512KB ≈ 100
+/** Hard ceiling independent of tier (prevents pathological manifests). */
+const MAX_CHUNKS_CAP = 500;
 
 export async function POST(request) {
   try {
@@ -21,19 +23,41 @@ export async function POST(request) {
       );
     }
 
+    const { user, maxUploadBytes, uploadAllowed } = await getAuthenticatedUploadContext();
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: 'يجب تسجيل الدخول لرفع الفيديوهات.' },
+        { status: 401 }
+      );
+    }
+    if (!uploadAllowed) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'لا يوجد رصيد رفع. اشترِ باقة من صفحة الأسعار.',
+        },
+        { status: 403 }
+      );
+    }
+
     const body = await request.json();
     const fileName = body.fileName?.toString() || '';
     const size = Number(body.size);
     const mimeType = body.mimeType?.toString() || '';
     const visibility = body.visibility?.toString() || 'public';
 
-    const check = validateVideoPayload({ name: fileName, size, mimeType, visibility });
+    const check = validateVideoPayload(
+      { name: fileName, size, mimeType, visibility },
+      maxUploadBytes
+    );
     if (check.error) {
       return NextResponse.json({ success: false, error: check.error }, { status: 400 });
     }
 
+    const tierMaxChunks = Math.ceil(maxUploadBytes / VIDEO_UPLOAD_CHUNK_BYTES);
     const totalChunks = Math.ceil(size / VIDEO_UPLOAD_CHUNK_BYTES);
-    if (!Number.isFinite(totalChunks) || totalChunks < 1 || totalChunks > MAX_CHUNKS) {
+    const allowedChunks = Math.min(tierMaxChunks, MAX_CHUNKS_CAP);
+    if (!Number.isFinite(totalChunks) || totalChunks < 1 || totalChunks > allowedChunks) {
       return NextResponse.json(
         { success: false, error: 'Invalid size or file too large for chunked upload.' },
         { status: 400 }
@@ -52,6 +76,8 @@ export async function POST(request) {
       size,
       mimeType,
       visibility,
+      ownerId: user.id,
+      maxUploadBytes,
       totalChunks,
       chunkSizeBytes: VIDEO_UPLOAD_CHUNK_BYTES,
       sessionToken,

@@ -12,20 +12,19 @@ function messageForUploadFailure(xhr) {
   }
   if (xhr.status === 503 || xhr.status === 504) {
     return (
-      'Gateway timeout or service unavailable (' +
-      xhr.status +
-      '). The host may limit large uploads; try a smaller file or check server limits and logs.' +
-      (jsonError ? ` ${jsonError}` : '')
+      'انتهت مهلة الاستجابة أو الخدمة غير متاحة حالياً. جرّب ملفاً أصغر أو أعد المحاولة لاحقاً.' +
+      (jsonError ? ` (${jsonError})` : '')
     );
   }
   if (jsonError) return jsonError;
-  return `Server error: ${xhr.status}`;
+  return `خطأ من الخادم (${xhr.status})`;
 }
 
 /** Many shared hosts return 503 on one large POST; small chunk requests usually succeed. */
 async function uploadChunked(file, visibility, setProgress) {
   const startRes = await fetch('/api/upload/chunked/start', {
     method: 'POST',
+    credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       fileName: file.name,
@@ -36,7 +35,7 @@ async function uploadChunked(file, visibility, setProgress) {
   });
   const start = await startRes.json().catch(() => ({}));
   if (!startRes.ok || !start.success) {
-    throw new Error(start.error || `Could not start upload (${startRes.status})`);
+    throw new Error(start.error || `تعذر بدء الرفع (${startRes.status})`);
   }
 
   const { sessionId, sessionToken, chunkSizeBytes, totalChunks } = start;
@@ -52,10 +51,14 @@ async function uploadChunked(file, visibility, setProgress) {
     fd.append('index', String(i));
     fd.append('part', chunk, `part-${i}`);
 
-    const partRes = await fetch('/api/upload/chunked/part', { method: 'POST', body: fd });
+    const partRes = await fetch('/api/upload/chunked/part', {
+      method: 'POST',
+      credentials: 'include',
+      body: fd,
+    });
     const partJson = await partRes.json().catch(() => ({}));
     if (!partRes.ok || !partJson.success) {
-      throw new Error(partJson.error || `Chunk ${i + 1}/${totalChunks} failed (${partRes.status})`);
+      throw new Error(partJson.error || `فشل الجزء ${i + 1} من ${totalChunks} (${partRes.status})`);
     }
 
     setProgress(Math.min(95, Math.round(((i + 1) / totalChunks) * 95)));
@@ -63,12 +66,13 @@ async function uploadChunked(file, visibility, setProgress) {
 
   const doneRes = await fetch('/api/upload/chunked/complete', {
     method: 'POST',
+    credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ sessionId, sessionToken }),
   });
   const done = await doneRes.json().catch(() => ({}));
   if (!doneRes.ok || !done.success) {
-    throw new Error(done.error || 'Could not finalize upload');
+    throw new Error(done.error || 'تعذر إتمام الرفع');
   }
   setProgress(100);
   return done.video;
@@ -95,7 +99,7 @@ function uploadViaServer(file, visibility, setProgress) {
           if (data.success) {
             resolve(data.video);
           } else {
-            reject(new Error(data.error || 'Upload failed'));
+            reject(new Error(data.error || 'فشل الرفع'));
           }
         } catch (err) {
           reject(err);
@@ -106,13 +110,14 @@ function uploadViaServer(file, visibility, setProgress) {
     });
 
     xhr.addEventListener('error', () => {
-      reject(new Error('Network error during upload'));
+      reject(new Error('خطأ في الشبكة أثناء الرفع'));
     });
 
     xhr.addEventListener('abort', () => {
-      reject(new Error('Upload aborted'));
+      reject(new Error('أُلغي الرفع'));
     });
 
+    xhr.withCredentials = true;
     xhr.open('POST', '/api/upload');
     xhr.send(formData);
   });
@@ -127,39 +132,47 @@ export function useVideoUpload() {
   const [stats, setStats] = useState(null);
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState({ totalPages: 1, total: 0, hasNext: false, hasPrev: false });
+  const [listScope, setListScope] = useState('public');
 
-  const fetchVideos = useCallback(async (targetPage = 1) => {
-    setLoadingList(true);
-    setError(null);
-    try {
-      const res = await fetch(`/api/videos?page=${targetPage}&limit=6`);
-      const data = await res.json();
-      if (!res.ok || !data.success) throw new Error(data.error || 'Failed to fetch videos');
-      setUploadedVideos(data.items);
-      setPagination(data.pagination);
-      setPage(data.pagination.page);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoadingList(false);
-    }
-  }, []);
+  const fetchVideos = useCallback(
+    async (targetPage = 1) => {
+      setLoadingList(true);
+      setError(null);
+      try {
+        const mineParam = listScope === 'mine' ? '&mine=1' : '';
+        const res = await fetch(`/api/videos?page=${targetPage}&limit=6${mineParam}`, {
+          credentials: 'include',
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) throw new Error(data.error || 'تعذر تحميل قائمة الفيديوهات');
+        setUploadedVideos(data.items);
+        setPagination(data.pagination);
+        setPage(data.pagination.page);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoadingList(false);
+      }
+    },
+    [listScope]
+  );
 
   const fetchStats = useCallback(async () => {
     try {
-      const res = await fetch('/api/stats');
+      const mineQuery = listScope === 'mine' ? '?mine=1' : '';
+      const res = await fetch(`/api/stats${mineQuery}`, { credentials: 'include' });
       const data = await res.json();
-      if (!res.ok || !data.success) throw new Error(data.error || 'Failed to fetch stats');
+      if (!res.ok || !data.success) throw new Error(data.error || 'تعذر تحميل الإحصائيات');
       setStats(data.stats);
     } catch {
-      // Keep stats optional for UI resiliency.
+      setStats(null);
     }
-  }, []);
+  }, [listScope]);
 
   useEffect(() => {
     fetchVideos(1);
     fetchStats();
-  }, [fetchStats, fetchVideos]);
+  }, [listScope, fetchVideos, fetchStats]);
 
   const upload = useCallback(
     async (file, visibility = 'public') => {
@@ -188,7 +201,7 @@ export function useVideoUpload() {
 
   const trackView = useCallback(async (id, accessToken) => {
     const query = accessToken ? `?accessToken=${encodeURIComponent(accessToken)}` : '';
-    await fetch(`/api/videos/${id}/view${query}`, { method: 'POST' });
+    await fetch(`/api/videos/${id}/view${query}`, { method: 'POST', credentials: 'include' });
     fetchStats();
   }, [fetchStats]);
 
@@ -209,6 +222,8 @@ export function useVideoUpload() {
     page,
     pagination,
     setPage: fetchVideos,
+    listScope,
+    setListScope,
     trackView,
     reset,
   };

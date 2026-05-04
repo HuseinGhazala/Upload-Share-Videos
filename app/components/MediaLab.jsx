@@ -3,8 +3,8 @@
 import { useEffect, useMemo, useState } from 'react';
 
 function formatBytes(bytes) {
-  if (!bytes) return '0 KB';
-  return `${(bytes / 1024).toFixed(1)} KB`;
+  if (!bytes) return '٠ كيلوبايت';
+  return `${new Intl.NumberFormat('ar-SA', { maximumFractionDigits: 1 }).format(bytes / 1024)} كيلوبايت`;
 }
 
 async function compressImage(file, { maxWidth, quality, format }) {
@@ -21,7 +21,7 @@ async function compressImage(file, { maxWidth, quality, format }) {
 
   const mime = format === 'png' ? 'image/png' : format === 'webp' ? 'image/webp' : 'image/jpeg';
   const blob = await new Promise((resolve) => canvas.toBlob(resolve, mime, quality / 100));
-  if (!blob) throw new Error('Failed to compress image');
+  if (!blob) throw new Error('فشل ضغط الصورة');
 
   const ext = format === 'png' ? 'png' : format === 'webp' ? 'webp' : 'jpg';
   return new File([blob], `${file.name.replace(/\.[^/.]+$/, '')}.${ext}`, { type: mime });
@@ -93,7 +93,7 @@ export default function MediaLab({ onToast }) {
     if (!imageFile || !optimizedSize) return null;
     const diff = Math.max(0, imageFile.size - optimizedSize);
     const pct = imageFile.size ? Math.round((diff / imageFile.size) * 100) : 0;
-    return `${formatBytes(diff)} saved (${pct}%)`;
+    return `${new Intl.NumberFormat('ar-SA').format(pct)}٪ أقل حجماً (${formatBytes(diff)})`;
   }, [imageFile, imageResult?.optimizedSize, optimizedPreviewSize]);
 
   const handleImageUpload = async () => {
@@ -112,14 +112,14 @@ export default function MediaLab({ onToast }) {
       // #region agent log
       fetch('http://127.0.0.1:7531/ingest/2bbb9be2-9e09-4d6e-beb1-e45041ba6453',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'1e3807'},body:JSON.stringify({sessionId:'1e3807',runId:'pre-fix',hypothesisId:'H4',location:'app/components/MediaLab.jsx:111',message:'client image upload response',data:{status:res.status,success:Boolean(data?.success),optimizedSize:optimized.size},timestamp:Date.now()})}).catch(()=>{});
       // #endregion
-      if (!res.ok || !data.success) throw new Error(data.error || 'Image upload failed');
+      if (!res.ok || !data.success) throw new Error(data.error || 'فشل رفع الصورة');
 
       setImageResult({
         ...data.item,
         optimizedSize: optimized.size,
         originalSize: imageFile.size,
       });
-      onToast?.('✅ Image optimized and uploaded', 'success');
+      onToast?.('تم تحسين الصورة ورفعها', 'success');
     } catch (error) {
       onToast?.(`❌ ${error.message}`, 'error');
     } finally {
@@ -138,9 +138,9 @@ export default function MediaLab({ onToast }) {
       formData.append('audio', audioFile);
       const res = await fetch('/api/upload-audio', { method: 'POST', body: formData });
       const data = await res.json();
-      if (!res.ok || !data.success) throw new Error(data.error || 'Audio upload failed');
+      if (!res.ok || !data.success) throw new Error(data.error || 'فشل رفع الصوت');
       setAudioResult(data.item);
-      onToast?.('✅ Audio uploaded successfully', 'success');
+      onToast?.('تم رفع الملف الصوتي', 'success');
     } catch (error) {
       onToast?.(`❌ ${error.message}`, 'error');
     } finally {
@@ -151,8 +151,8 @@ export default function MediaLab({ onToast }) {
   return (
     <section className="mt-10 grid gap-6 lg:grid-cols-2">
       <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
-        <h3 className="text-lg font-semibold">Image Optimizer (Squoosh-style)</h3>
-        <p className="text-sm text-white/60 mt-1">Convert format, reduce quality, and resize before upload.</p>
+        <h3 className="text-lg font-semibold">معمل الصور</h3>
+        <p className="text-sm text-white/60 mt-1">ضغط الصور وتغيير الصيغة والعرض قبل الرفع — يوفّر بياناتك.</p>
 
         <input
           type="file"
@@ -163,7 +163,7 @@ export default function MediaLab({ onToast }) {
 
         <div className="mt-4 grid grid-cols-3 gap-3">
           <label className="text-xs text-white/70">
-            Max Width
+            أقصى عرض
             <input
               type="number"
               className="mt-1 w-full rounded-md bg-white/10 border border-white/20 px-2 py-1"
@@ -172,7 +172,7 @@ export default function MediaLab({ onToast }) {
             />
           </label>
           <label className="text-xs text-white/70">
-            Quality
+            الجودة
             <input
               type="number"
               min={10}
@@ -183,7 +183,7 @@ export default function MediaLab({ onToast }) {
             />
           </label>
           <label className="text-xs text-white/70">
-            Format
+            الصيغة
             <select
               className="mt-1 w-full rounded-md bg-white/10 border border-white/20 px-2 py-1"
               value={format}
@@ -198,16 +198,16 @@ export default function MediaLab({ onToast }) {
 
         {originalPreviewUrl && optimizedPreviewUrl && (
           <div className="mt-4">
-            <p className="text-xs text-white/60 mb-2">Live Before / After Preview</p>
+            <p className="text-xs text-white/60 mb-2">معاينة مباشرة: قبل وبعد</p>
             <div className="relative w-full overflow-hidden rounded-xl border border-white/20 bg-black aspect-video">
               <img
                 src={originalPreviewUrl}
-                alt="Before optimization"
+                alt="قبل التحسين"
                 className="absolute inset-0 w-full h-full object-contain"
               />
               <img
                 src={optimizedPreviewUrl}
-                alt="After optimization"
+                alt="بعد التحسين"
                 className="absolute inset-0 w-full h-full object-contain"
                 style={{ clipPath: `inset(0 0 0 ${compareSplit}%)` }}
               />
@@ -215,8 +215,8 @@ export default function MediaLab({ onToast }) {
                 className="absolute top-0 bottom-0 w-0.5 bg-white/90"
                 style={{ left: `${compareSplit}%` }}
               />
-              <span className="absolute left-3 top-3 rounded bg-black/60 px-2 py-1 text-[10px]">Before</span>
-              <span className="absolute right-3 top-3 rounded bg-black/60 px-2 py-1 text-[10px]">After</span>
+              <span className="absolute end-3 top-3 rounded bg-black/60 px-2 py-1 text-[10px]">قبل</span>
+              <span className="absolute start-3 top-3 rounded bg-black/60 px-2 py-1 text-[10px]">بعد</span>
             </div>
             <input
               type="range"
@@ -234,27 +234,36 @@ export default function MediaLab({ onToast }) {
           disabled={!imageFile || imageLoading}
           className="mt-4 px-4 py-2 rounded-lg border border-indigo-400/30 bg-indigo-500/20 disabled:opacity-50"
         >
-          {imageLoading ? 'Optimizing...' : 'Optimize + Upload Image'}
+          {imageLoading ? 'جاري التحسين…' : 'تحسين ورفع الصورة'}
         </button>
 
         {imageResult && (
           <div className="mt-4 text-sm text-white/70">
-            <p>Uploaded: <a className="text-indigo-300 underline" href={imageResult.url} target="_blank">Open image</a></p>
-            <p>Original: {formatBytes(imageResult.originalSize)} | Optimized: {formatBytes(imageResult.optimizedSize)}</p>
+            <p>
+              الرابط:{' '}
+              <a className="text-indigo-300 underline" href={imageResult.url} target="_blank" rel="noreferrer">
+                فتح الصورة
+              </a>
+            </p>
+            <p>
+              الأصلي: {formatBytes(imageResult.originalSize)} · بعد التحسين: {formatBytes(imageResult.optimizedSize)}
+            </p>
             {savingText && <p className="text-green-300">{savingText}</p>}
           </div>
         )}
         {!imageResult && imageFile && (
           <div className="mt-4 text-sm text-white/70">
-            <p>Preview optimized size: {previewLoading ? 'Calculating...' : formatBytes(optimizedPreviewSize)}</p>
+            <p>
+              حجم المعاينة بعد التحسين: {previewLoading ? 'جاري الحساب…' : formatBytes(optimizedPreviewSize)}
+            </p>
             {savingText && <p className="text-green-300">{savingText}</p>}
           </div>
         )}
       </div>
 
       <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
-        <h3 className="text-lg font-semibold">Audio Upload / Extract</h3>
-        <p className="text-sm text-white/60 mt-1">Upload audio directly, or upload video to generate an MP3 link.</p>
+        <h3 className="text-lg font-semibold">رفع أو استخراج الصوت</h3>
+        <p className="text-sm text-white/60 mt-1">ارفع ملفاً صوتياً، أو فيديو لاستخراج رابط للصوت (حسب نوع الملف).</p>
 
         <input
           type="file"
@@ -268,18 +277,18 @@ export default function MediaLab({ onToast }) {
           disabled={!audioFile || audioLoading}
           className="mt-4 px-4 py-2 rounded-lg border border-purple-400/30 bg-purple-500/20 disabled:opacity-50"
         >
-          {audioLoading ? 'Uploading...' : 'Upload / Extract Audio'}
+          {audioLoading ? 'جاري الرفع…' : 'رفع أو استخراج الصوت'}
         </button>
 
         {audioResult && (
           <div className="mt-4 text-sm text-white/70">
             <p>
-              Audio link:{' '}
-              <a className="text-purple-300 underline" href={audioResult.url} target="_blank">
-                Open audio
+              رابط الصوت:{' '}
+              <a className="text-purple-300 underline" href={audioResult.url} target="_blank" rel="noreferrer">
+                فتح الصوت
               </a>
             </p>
-            {audioResult.fromVideo ? <p className="text-green-300">Audio extracted from video input.</p> : null}
+            {audioResult.fromVideo ? <p className="text-green-300">تم استخراج الصوت من ملف الفيديو.</p> : null}
           </div>
         )}
       </div>
