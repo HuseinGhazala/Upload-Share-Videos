@@ -3,16 +3,13 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/app/providers/AuthProvider';
 import AppNavbar from '@/app/components/AppNavbar';
 import {
   isSupabaseBrowserConfigured,
-  messageForSupabaseConnectivityError,
 } from '@/app/lib/supabase/envPublic';
 
 export default function SignupPage() {
   const router = useRouter();
-  const { supabase } = useAuth();
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -26,20 +23,26 @@ export default function SignupPage() {
     setMessage('');
     setLoading(true);
     try {
-      const { error: err } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
-          data: { full_name: fullName.trim() },
-        },
+      const res = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          fullName: fullName.trim(),
+          email,
+          password,
+          origin: window.location.origin,
+        }),
       });
-      if (err) throw err;
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.error || 'فشل إنشاء الحساب');
+      }
       setMessage('تم إنشاء الحساب. افتح الرابط الذي أُرسل لبريدك إذا كان تأكيد البريد مفعّلاً.');
       router.refresh();
     } catch (err) {
-      const raw = typeof err?.message === 'string' ? err.message : String(err ?? '');
-      setError(messageForSupabaseConnectivityError(raw) || 'فشل إنشاء الحساب');
+      const raw = typeof err?.message === 'string' ? err.message : '';
+      setError(raw || 'فشل إنشاء الحساب');
     } finally {
       setLoading(false);
     }

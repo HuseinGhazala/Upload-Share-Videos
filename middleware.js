@@ -10,12 +10,49 @@ const SUPABASE_URL =
 const SUPABASE_ANON_KEY =
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? 'sb_publishable_BUILD_PLACEHOLDER';
 
+function getSupabaseOrigin() {
+  try {
+    return new URL(SUPABASE_URL).origin;
+  } catch {
+    return '';
+  }
+}
+
+function buildCsp() {
+  const supabaseOrigin = getSupabaseOrigin();
+  const connectSrc = ["'self'", 'https://*.supabase.co'];
+  if (supabaseOrigin) connectSrc.push(supabaseOrigin);
+
+  return [
+    "default-src 'self'",
+    "base-uri 'self'",
+    "form-action 'self'",
+    "frame-ancestors 'none'",
+    "object-src 'none'",
+    "img-src 'self' data: blob: https:",
+    "media-src 'self' blob: data: https:",
+    "font-src 'self' data: https:",
+    "style-src 'self' 'unsafe-inline' https:",
+    "script-src 'self' 'unsafe-inline' https://www.google.com https://www.gstatic.com https://hcaptcha.com https://*.hcaptcha.com",
+    "frame-src 'self' https://www.google.com https://recaptcha.google.com https://hcaptcha.com https://*.hcaptcha.com",
+    `connect-src ${connectSrc.join(' ')} https://www.google.com https://hcaptcha.com https://*.hcaptcha.com`,
+    "upgrade-insecure-requests",
+  ].join('; ');
+}
+
 /** يمنع كاش HTML/RSC قديم يشير لـ chunks من build سابق (ChunkLoadError بعد النشر). */
 function noStoreDocumentHeaders(res) {
   res.headers.set(
     'Cache-Control',
     'private, no-cache, no-store, max-age=0, must-revalidate'
   );
+  res.headers.set('X-Content-Type-Options', 'nosniff');
+  res.headers.set('X-Frame-Options', 'DENY');
+  res.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  res.headers.set('Cross-Origin-Opener-Policy', 'same-origin');
+  res.headers.set('Cross-Origin-Resource-Policy', 'same-origin');
+  res.headers.set('Content-Security-Policy', buildCsp());
 }
 
 export async function middleware(request) {

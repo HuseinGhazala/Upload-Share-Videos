@@ -1,36 +1,66 @@
 'use client';
 
-import { Suspense, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
+import Script from 'next/script';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useAuth } from '@/app/providers/AuthProvider';
 import AppNavbar from '@/app/components/AppNavbar';
 import {
   isSupabaseBrowserConfigured,
-  messageForSupabaseConnectivityError,
 } from '@/app/lib/supabase/envPublic';
+import { getCaptchaClientConfig } from '@/app/lib/security/captcha';
+
+const CAPTCHA = getCaptchaClientConfig();
+
+function captchaScriptSrc(provider) {
+  if (provider === 'recaptcha') return 'https://www.google.com/recaptcha/api.js';
+  if (provider === 'hcaptcha') return 'https://js.hcaptcha.com/1/api.js';
+  return '';
+}
 
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { supabase } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState(searchParams.get('error') || '');
   const [loading, setLoading] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState('');
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    window.__authCaptchaDone = (token) => setCaptchaToken(typeof token === 'string' ? token : '');
+    window.__authCaptchaExpired = () => setCaptchaToken('');
+    return () => {
+      delete window.__authCaptchaDone;
+      delete window.__authCaptchaExpired;
+    };
+  }, []);
 
   const onSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    if (CAPTCHA.provider && CAPTCHA.siteKey && !captchaToken) {
+      setError('أكمل اختبار التحقق الأمني أولاً.');
+      return;
+    }
     setLoading(true);
     try {
-      const { error: err } = await supabase.auth.signInWithPassword({ email, password });
-      if (err) throw err;
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ email, password, captchaToken }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.error || 'فشل تسجيل الدخول');
+      }
       router.push('/');
       router.refresh();
     } catch (err) {
-      const raw = typeof err?.message === 'string' ? err.message : String(err ?? '');
-      setError(messageForSupabaseConnectivityError(raw) || 'فشل تسجيل الدخول');
+      const raw = typeof err?.message === 'string' ? err.message : '';
+      setError(raw || 'فشل تسجيل الدخول');
     } finally {
       setLoading(false);
     }
@@ -38,6 +68,9 @@ function LoginForm() {
 
   return (
     <main className="min-h-screen bg-[#0a0a12] text-white px-4 py-12">
+      {CAPTCHA.provider && CAPTCHA.siteKey ? (
+        <Script src={captchaScriptSrc(CAPTCHA.provider)} strategy="afterInteractive" />
+      ) : null}
       <div className="max-w-md mx-auto">
         <AppNavbar />
         <div className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur p-8 shadow-2xl">
@@ -78,6 +111,26 @@ function LoginForm() {
                 autoComplete="current-password"
               />
             </div>
+            {CAPTCHA.provider && CAPTCHA.siteKey ? (
+              <div className="space-y-2">
+                {CAPTCHA.provider === 'recaptcha' ? (
+                  <div
+                    className="g-recaptcha"
+                    data-sitekey={CAPTCHA.siteKey}
+                    data-callback="__authCaptchaDone"
+                    data-expired-callback="__authCaptchaExpired"
+                  />
+                ) : (
+                  <div
+                    className="h-captcha"
+                    data-sitekey={CAPTCHA.siteKey}
+                    data-callback="__authCaptchaDone"
+                    data-expired-callback="__authCaptchaExpired"
+                  />
+                )}
+                <input type="hidden" name="captchaToken" value={captchaToken} />
+              </div>
+            ) : null}
             {error && (
               <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
                 {error}
