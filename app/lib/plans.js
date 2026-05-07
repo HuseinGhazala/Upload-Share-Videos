@@ -63,7 +63,7 @@ export function maxUploadBytesForProfile(_profile) {
   return MAX_VIDEO_BYTES_PER_UPLOAD;
 }
 
-/** تسمية عربية للعرض */
+/** تسمية عربية للعرض */      
 export function planLabelAr(planKey) {
   const k = planKey ?? PLAN_KEYS.NONE;
   if (k === PLAN_KEYS.SINGLE) return 'باقة فيديو واحد';
