@@ -23,17 +23,23 @@ function getProviderConfig() {
 }
 
 export function getCaptchaClientConfig() {
-  const provider = (process.env.AUTH_CAPTCHA_PROVIDER || '').trim().toLowerCase();
-  if (provider === 'recaptcha') {
+  const publicProvider = (process.env.NEXT_PUBLIC_AUTH_CAPTCHA_PROVIDER || '').trim().toLowerCase();
+  const fallbackProvider = (process.env.AUTH_CAPTCHA_PROVIDER || '').trim().toLowerCase();
+  const provider = publicProvider || fallbackProvider;
+  const recaptchaSiteKey = (process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || '').trim();
+  const hcaptchaSiteKey = (process.env.NEXT_PUBLIC_HCAPTCHA_SITE_KEY || '').trim();
+
+  // If provider is not explicitly exposed to client, infer safely from available public site keys.
+  if ((!provider || provider === 'recaptcha') && recaptchaSiteKey) {
     return {
-      provider,
-      siteKey: (process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || '').trim(),
+      provider: 'recaptcha',
+      siteKey: recaptchaSiteKey,
     };
   }
-  if (provider === 'hcaptcha') {
+  if ((provider === 'hcaptcha' || !provider) && hcaptchaSiteKey) {
     return {
-      provider,
-      siteKey: (process.env.NEXT_PUBLIC_HCAPTCHA_SITE_KEY || '').trim(),
+      provider: 'hcaptcha',
+      siteKey: hcaptchaSiteKey,
     };
   }
   return { provider: '', siteKey: '' };
