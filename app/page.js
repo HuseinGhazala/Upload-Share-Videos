@@ -1,12 +1,16 @@
 'use client';
 import { useState, useCallback, useEffect } from 'react';
 import dynamic from 'next/dynamic';
+import Link from 'next/link';
+import { motion } from 'framer-motion';
 import VideoUpload from './components/VideoUpload';
 import VideoGallery from './components/VideoGallery';
 import AppNavbar from './components/AppNavbar';
 import { useVideoUpload } from './hooks/useVideoUpload';
 import { useAuth } from './providers/AuthProvider';
 import { MAX_VIDEO_BYTES_PER_UPLOAD } from '@/app/lib/plans';
+import { getAttributionFromLocation, trackFunnelEvent } from '@/app/lib/analytics/funnel';
+import { CinematicCard, CinematicSection, FloatOrb } from './components/ui/CinematicSection';
 
 const MediaLab = dynamic(() => import('./components/MediaLab'), {
   loading: () => (
@@ -52,10 +56,21 @@ export default function HomePage() {
   } = useVideoUpload();
   const [toasts, setToasts] = useState([]);
   const [showMediaLab, setShowMediaLab] = useState(false);
+  const [firstUploadTracked, setFirstUploadTracked] = useState(false);
 
   useEffect(() => {
     if (!user) setListScope('public');
   }, [user, setListScope]);
+
+  useEffect(() => {
+    if (!user || !quota?.uploadAllowed || firstUploadTracked) return;
+    if (!Array.isArray(uploadedVideos) || uploadedVideos.length === 0) return;
+    setFirstUploadTracked(true);
+    trackFunnelEvent('first_upload_after_activation', {
+      uploadsCount: uploadedVideos.length,
+      ...getAttributionFromLocation(),
+    });
+  }, [user, quota?.uploadAllowed, uploadedVideos, firstUploadTracked]);
 
   const showToast = useCallback((message, type = 'success') => {
     const id = Date.now();
@@ -87,38 +102,75 @@ export default function HomePage() {
   }, [showToast]);
 
   return (
-    <main className="min-h-screen bg-[#050810] text-white">
-      {/* خلفية بلمسة ألوان وطنية خفيفة */}
+    <main className="min-h-screen text-white">
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute -top-40 start-0 w-80 h-80 bg-emerald-700/12 rounded-full blur-2xl" />
-        <div className="absolute -top-20 end-0 w-72 h-72 bg-indigo-600/15 rounded-full blur-2xl" />
+        <FloatOrb className="absolute -top-36 -start-12 h-[28rem] w-[28rem] rounded-full bg-indigo-500/20 blur-[100px]" />
+        <FloatOrb className="absolute top-1/3 -end-12 h-[24rem] w-[24rem] rounded-full bg-cyan-400/20 blur-[90px]" />
       </div>
 
-      <div className="relative max-w-4xl mx-auto px-4 py-16">
+      <div className="relative section-wrap py-10 sm:py-14">
         <AppNavbar />
 
-        {/* Header */}
-        <div className="text-center mb-12">
-          <div className="inline-flex flex-wrap items-center justify-center gap-2 px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-emerald-300/95 text-sm font-medium mb-4">
+        <CinematicSection className="text-center mb-12 sm:mb-16" y={24}>
+          <div className="chip mb-5">
             <span className="text-base" aria-hidden>
               🇸🇦
             </span>
             منصّة سعودية — أسعار بالريال السعودي
           </div>
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-sm font-medium mb-6">
-            <span className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse" />
-            رفع ومشاركة الفيديو
-          </div>
-          <h1 className="text-4xl sm:text-5xl font-extrabold bg-gradient-to-br from-white via-emerald-100/90 to-indigo-200 bg-clip-text text-transparent leading-tight">
-            ارفع فيديوهاتك وشاركها بثقة
+          <h1 className="headline-display bg-gradient-to-b from-white via-indigo-100 to-indigo-300 bg-clip-text text-transparent">
+            تجربة رفع فيديو\nراقية وسريعة
           </h1>
-          <p className="mt-4 text-white/45 text-base sm:text-lg max-w-xl mx-auto leading-relaxed">
-            باقات واضحة بالريال السعودي، بدون تعقيد — مناسبة للمبدعين والأفراد والفرق داخل المملكة.
+          <p className="mt-5 text-base sm:text-lg text-muted max-w-2xl mx-auto leading-relaxed">
+            هوية بصرية احترافية، تجربة استخدام سلسة، وباقات مرنة للمبدعين والفرق داخل المملكة.
           </p>
-        </div>
+          <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
+            <Link
+              href="/pricing?from=home_hero"
+              onClick={() => trackFunnelEvent('view_pricing', { source: 'home_hero' })}
+              className="btn-primary"
+            >
+              ابدأ اشتراكك الآن
+            </Link>
+            <Link
+              href="/signup?from=home_hero"
+              onClick={() => trackFunnelEvent('start_signup', { source: 'home_hero' })}
+              className="btn-secondary"
+            >
+              إنشاء حساب
+            </Link>
+          </div>
+          <div className="mt-5 flex flex-wrap justify-center gap-2">
+            <span className="chip">تفعيل سريع</span>
+            <span className="chip">واجهة أنيقة</span>
+            <span className="chip">دعم عربي</span>
+          </div>
+        </CinematicSection>
 
-        {/* Upload Card */}
-        <div className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur p-6 sm:p-8 shadow-2xl">
+        <CinematicSection className="mb-10 grid gap-4 sm:grid-cols-3" delay={0.1}>
+          <CinematicCard className="p-5 text-sm">
+            <p className="text-emerald-200 font-semibold mb-2">1) سجّل حسابك</p>
+            <p className="text-white/60">خطوة سريعة ببريدك خلال أقل من دقيقة.</p>
+          </CinematicCard>
+          <CinematicCard className="p-5 text-sm">
+            <p className="text-indigo-200 font-semibold mb-2">2) اختر الباقة المناسبة</p>
+            <p className="text-white/60">اختر باقة تناسب حجم الاستخدام وخطة النشر.</p>
+          </CinematicCard>
+          <CinematicCard className="p-5 text-sm">
+            <p className="text-amber-200 font-semibold mb-2">3) ارفع إيصال الدفع</p>
+            <p className="text-white/60">نراجع الطلب ونفعّل الباقة سريعًا في نفس اليوم غالبًا.</p>
+          </CinematicCard>
+        </CinematicSection>
+
+        <CinematicSection delay={0.1}>
+          <div className="glass-panel p-6 sm:p-8">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+              <h2 className="text-xl font-semibold">محطة الرفع الذكية</h2>
+              <span className="chip">حتى 50MB لكل فيديو</span>
+            </div>
+            <p className="text-sm text-white/60 mb-5">
+              واجهة رفع محسّنة مع متابعة تقدم واضحة وتحكم دقيق في مستوى الظهور.
+            </p>
           <VideoUpload
             onUpload={upload}
             loading={loading}
@@ -129,64 +181,68 @@ export default function HomePage() {
             canUpload={Boolean(user) && Boolean(quota?.uploadAllowed)}
             maxUploadBytes={quota?.maxUploadBytes ?? MAX_VIDEO_BYTES_PER_UPLOAD}
           />
-        </div>
+          </div>
+        </CinematicSection>
 
         {stats && (
-          <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+          <CinematicSection className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-3" delay={0.1}>
+            <motion.div whileHover={{ y: -2 }} className="glass-panel p-4 rounded-xl border">
               <p className="text-xs text-white/50">عدد الفيديوهات</p>
               <p className="text-xl font-bold tabular-nums">{stats.totalVideos}</p>
-            </div>
-            <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+            </motion.div>
+            <motion.div whileHover={{ y: -2 }} className="glass-panel p-4 rounded-xl border">
               <p className="text-xs text-white/50">إجمالي المشاهدات</p>
               <p className="text-xl font-bold tabular-nums">{stats.totalViews}</p>
-            </div>
-            <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+            </motion.div>
+            <motion.div whileHover={{ y: -2 }} className="glass-panel p-4 rounded-xl border">
               <p className="text-xs text-white/50">عامة</p>
               <p className="text-xl font-bold tabular-nums">{stats.byVisibility.public}</p>
-            </div>
-            <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+            </motion.div>
+            <motion.div whileHover={{ y: -2 }} className="glass-panel p-4 rounded-xl border">
               <p className="text-xs text-white/50">خاصة ومخفيّة</p>
               <p className="text-xl font-bold tabular-nums">
                 {stats.byVisibility.private + stats.byVisibility.unlisted}
               </p>
-            </div>
-          </div>
+            </motion.div>
+          </CinematicSection>
         )}
 
-        {/* Gallery */}
-        <VideoGallery
-          videos={uploadedVideos}
-          onCopy={handleCopy}
-          onTrackView={trackView}
-          pagination={pagination}
-          onPageChange={setPage}
-          loading={loadingList}
-          listScope={listScope}
-          onListScopeChange={setListScope}
-          sessionUser={user}
-        />
+        <CinematicSection delay={0.08}>
+          <VideoGallery
+            videos={uploadedVideos}
+            onCopy={handleCopy}
+            onTrackView={trackView}
+            pagination={pagination}
+            onPageChange={setPage}
+            loading={loadingList}
+            listScope={listScope}
+            onListScopeChange={setListScope}
+            sessionUser={user}
+          />
+        </CinematicSection>
 
-        <div className="mt-14 border-t border-white/10 pt-10">
+        <CinematicSection className="mt-14 border-t border-white/10 pt-10" delay={0.15}>
           <h2 className="text-xl font-bold text-white mb-2 flex items-center gap-2">
             <span className="text-2xl" aria-hidden>
               ✨
             </span>
             أدوات إضافية
           </h2>
-          <p className="text-sm text-white/45 mb-6">معمل ضغط الصور ورفع الصوت — اختياري بجانب الفيديو.</p>
+          <p className="text-sm text-white/45 mb-6">
+            معمل ضغط الصور واستخراج الصوت بتجربة سلسة وانسيابية في نفس الواجهة.
+          </p>
           {showMediaLab ? (
             <MediaLab onToast={showToast} />
           ) : (
             <button
               type="button"
               onClick={() => setShowMediaLab(true)}
-              className="rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-sm text-white/85 hover:bg-white/10 transition"
+              className="btn-secondary"
             >
               تحميل الأدوات الإضافية
             </button>
           )}
-        </div>
+        </CinematicSection>
       </div>
 
       <Toast toasts={toasts} />

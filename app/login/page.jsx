@@ -4,11 +4,13 @@ import { Suspense, useEffect, useState } from 'react';
 import Script from 'next/script';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { motion } from 'framer-motion';
 import AppNavbar from '@/app/components/AppNavbar';
 import {
   isSupabaseBrowserConfigured,
 } from '@/app/lib/supabase/envPublic';
 import { getCaptchaClientConfig } from '@/app/lib/security/captcha';
+import { getAttributionFromLocation, trackFunnelEvent } from '@/app/lib/analytics/funnel';
 
 const CAPTCHA = getCaptchaClientConfig();
 
@@ -26,6 +28,7 @@ function LoginForm() {
   const [error, setError] = useState(searchParams.get('error') || '');
   const [loading, setLoading] = useState(false);
   const [captchaToken, setCaptchaToken] = useState('');
+  const nextPath = searchParams.get('next');
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -46,6 +49,10 @@ function LoginForm() {
     }
     setLoading(true);
     try {
+      trackFunnelEvent('start_login', {
+        source: searchParams.get('from') || '',
+        ...getAttributionFromLocation(),
+      });
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -56,7 +63,19 @@ function LoginForm() {
       if (!res.ok) {
         throw new Error(data.error || 'فشل تسجيل الدخول');
       }
-      router.push('/');
+      const meRes = await fetch('/api/me', { credentials: 'include' });
+      const me = await meRes.json().catch(() => ({}));
+      trackFunnelEvent('complete_login', {
+        hasPlan: Boolean(me?.uploadAllowed),
+        source: searchParams.get('from') || '',
+      });
+      if (nextPath && nextPath.startsWith('/') && !nextPath.startsWith('//')) {
+        router.push(nextPath);
+      } else if (!me?.uploadAllowed) {
+        router.push('/pricing?from=login_no_plan');
+      } else {
+        router.push('/');
+      }
       router.refresh();
     } catch (err) {
       const raw = typeof err?.message === 'string' ? err.message : '';
@@ -67,16 +86,26 @@ function LoginForm() {
   };
 
   return (
-    <main className="min-h-screen bg-[#0a0a12] text-white px-4 py-12">
+    <main className="min-h-screen text-white">
       {CAPTCHA.provider && CAPTCHA.siteKey ? (
         <Script src={captchaScriptSrc(CAPTCHA.provider)} strategy="afterInteractive" />
       ) : null}
-      <div className="max-w-md mx-auto">
+      <div className="section-wrap max-w-2xl py-10 sm:py-14">
         <AppNavbar />
-        <div className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur p-8 shadow-2xl">
-          <h1 className="text-2xl font-bold text-center mb-2">تسجيل الدخول</h1>
-          <p className="text-white/50 text-sm text-center mb-8">
+        <motion.div
+          initial={{ opacity: 0, y: 28 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
+          className="glass-panel p-8 sm:p-10"
+        >
+          <h1 className="text-3xl font-bold text-center mb-2 bg-gradient-to-b from-white to-indigo-200 bg-clip-text text-transparent">
+            تسجيل الدخول
+          </h1>
+          <p className="text-white/55 text-sm text-center mb-8">
             ادخل بريدك وكلمة المرور للمتابعة.
+          </p>
+          <p className="text-center text-xs text-white/45 mb-5">
+            بعد تسجيل الدخول، سنوجّهك مباشرة للخطوة الأنسب لإكمال الاشتراك أو بدء الرفع.
           </p>
           {!isSupabaseBrowserConfigured() && (
             <p className="text-xs text-amber-200/90 bg-amber-500/15 border border-amber-400/25 rounded-xl px-3 py-3 mb-4 leading-relaxed whitespace-pre-wrap">
@@ -94,7 +123,7 @@ function LoginForm() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full rounded-xl bg-white/10 border border-white/20 px-4 py-3 text-white outline-none focus:border-indigo-500"
+                className="w-full rounded-xl bg-white/10 border border-white/20 px-4 py-3 text-white outline-none focus:border-indigo-500 placeholder:text-white/30"
                 autoComplete="email"
               />
             </div>
@@ -107,7 +136,7 @@ function LoginForm() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full rounded-xl bg-white/10 border border-white/20 px-4 py-3 text-white outline-none focus:border-indigo-500"
+                className="w-full rounded-xl bg-white/10 border border-white/20 px-4 py-3 text-white outline-none focus:border-indigo-500 placeholder:text-white/30"
                 autoComplete="current-password"
               />
             </div>
@@ -139,18 +168,18 @@ function LoginForm() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 font-semibold transition"
+              className="btn-primary w-full disabled:opacity-50"
             >
               {loading ? 'جاري الدخول…' : 'دخول'}
             </button>
           </form>
           <p className="text-center text-sm text-white/50 mt-6">
             ليس لديك حساب؟{' '}
-            <Link href="/signup" className="text-indigo-400 hover:text-indigo-300">
+            <Link href="/signup" className="text-indigo-300 hover:text-indigo-200">
               إنشاء حساب
             </Link>
           </p>
-        </div>
+        </motion.div>
       </div>
     </main>
   );
