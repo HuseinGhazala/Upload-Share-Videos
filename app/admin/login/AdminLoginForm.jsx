@@ -61,9 +61,13 @@ export default function AdminLoginForm() {
           className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur p-8 shadow-xl space-y-5"
           dir="rtl"
         >
-          <label className="block">
-            <span className="text-sm text-white/60 mb-2 block">رمز الدخول</span>
+          <div className="block">
+            <label htmlFor="admin-pin" className="text-sm text-white/60 mb-2 block">
+              رمز الدخول
+            </label>
             <input
+              id="admin-pin"
+              name="adminPin"
               type="password"
               inputMode="numeric"
               autoComplete="off"
@@ -73,7 +77,7 @@ export default function AdminLoginForm() {
               placeholder="••••••"
               required
             />
-          </label>
+          </div>
           {err && <p className="text-red-400 text-sm">{err}</p>}
           <button
             type="submit"

@@ -26,11 +26,6 @@ export default function SignupPage() {
     setMessage('');
     setLoading(true);
     try {
-      if (!isSupabaseBrowserConfigured()) {
-        setError(messageForSupabaseConnectivityError(''));
-        setLoading(false);
-        return;
-      }
       const { error: err } = await supabase.auth.signUp({
         email,
         password,
@@ -61,13 +56,16 @@ export default function SignupPage() {
           </p>
           {!isSupabaseBrowserConfigured() && (
             <p className="text-xs text-amber-200/90 bg-amber-500/15 border border-amber-400/25 rounded-xl px-3 py-3 mb-4 leading-relaxed whitespace-pre-wrap">
-              {messageForSupabaseConnectivityError('')}
+              تنبيه: إعدادات Supabase الظاهرة للمتصفح تبدو غير جاهزة من نسخة البناء الحالية. يمكنك المتابعة بالمحاولة، وإن استمر الفشل راجع متغيرات
+              NEXT_PUBLIC ثم أعد النشر.
             </p>
           )}
           <form onSubmit={onSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm text-white/70 mb-1">الاسم</label>
+              <label htmlFor="signup-name" className="block text-sm text-white/70 mb-1">الاسم</label>
               <input
+                id="signup-name"
+                name="fullName"
                 type="text"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
@@ -76,8 +74,10 @@ export default function SignupPage() {
               />
             </div>
             <div>
-              <label className="block text-sm text-white/70 mb-1">البريد الإلكتروني</label>
+              <label htmlFor="signup-email" className="block text-sm text-white/70 mb-1">البريد الإلكتروني</label>
               <input
+                id="signup-email"
+                name="email"
                 type="email"
                 required
                 value={email}
@@ -87,8 +87,10 @@ export default function SignupPage() {
               />
             </div>
             <div>
-              <label className="block text-sm text-white/70 mb-1">كلمة المرور</label>
+              <label htmlFor="signup-password" className="block text-sm text-white/70 mb-1">كلمة المرور</label>
               <input
+                id="signup-password"
+                name="password"
                 type="password"
                 required
                 minLength={6}
