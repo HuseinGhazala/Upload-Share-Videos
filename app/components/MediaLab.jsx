@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useEffect, useMemo, useState } from 'react';
 
 function formatBytes(bytes) {
@@ -100,18 +101,12 @@ export default function MediaLab({ onToast }) {
     if (!imageFile) return;
     setImageLoading(true);
     try {
-      // #region agent log
-      fetch('http://127.0.0.1:7531/ingest/2bbb9be2-9e09-4d6e-beb1-e45041ba6453',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'1e3807'},body:JSON.stringify({sessionId:'1e3807',runId:'pre-fix',hypothesisId:'H4',location:'app/components/MediaLab.jsx:103',message:'client image optimization start',data:{name:imageFile.name,type:imageFile.type,size:imageFile.size,maxWidth,quality,format},timestamp:Date.now()})}).catch(()=>{});
-      // #endregion
       const optimized = await compressImage(imageFile, { maxWidth, quality, format });
       const formData = new FormData();
       formData.append('image', optimized);
 
       const res = await fetch('/api/upload-image', { method: 'POST', body: formData });
       const data = await res.json();
-      // #region agent log
-      fetch('http://127.0.0.1:7531/ingest/2bbb9be2-9e09-4d6e-beb1-e45041ba6453',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'1e3807'},body:JSON.stringify({sessionId:'1e3807',runId:'pre-fix',hypothesisId:'H4',location:'app/components/MediaLab.jsx:111',message:'client image upload response',data:{status:res.status,success:Boolean(data?.success),optimizedSize:optimized.size},timestamp:Date.now()})}).catch(()=>{});
-      // #endregion
       if (!res.ok || !data.success) throw new Error(data.error || 'فشل رفع الصورة');
 
       setImageResult({
@@ -131,9 +126,6 @@ export default function MediaLab({ onToast }) {
     if (!audioFile) return;
     setAudioLoading(true);
     try {
-      // #region agent log
-      fetch('http://127.0.0.1:7531/ingest/2bbb9be2-9e09-4d6e-beb1-e45041ba6453',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'1e3807'},body:JSON.stringify({sessionId:'1e3807',runId:'pre-fix',hypothesisId:'H5',location:'app/components/MediaLab.jsx:130',message:'client audio upload start',data:{name:audioFile.name,type:audioFile.type,size:audioFile.size},timestamp:Date.now()})}).catch(()=>{});
-      // #endregion
       const formData = new FormData();
       formData.append('audio', audioFile);
       const res = await fetch('/api/upload-audio', { method: 'POST', body: formData });
@@ -200,14 +192,20 @@ export default function MediaLab({ onToast }) {
           <div className="mt-4">
             <p className="text-xs text-white/60 mb-2">معاينة مباشرة: قبل وبعد</p>
             <div className="relative w-full overflow-hidden rounded-xl border border-white/20 bg-black aspect-video">
-              <img
+              <Image
                 src={originalPreviewUrl}
                 alt="قبل التحسين"
+                fill
+                unoptimized
+                sizes="100vw"
                 className="absolute inset-0 w-full h-full object-contain"
               />
-              <img
+              <Image
                 src={optimizedPreviewUrl}
                 alt="بعد التحسين"
+                fill
+                unoptimized
+                sizes="100vw"
                 className="absolute inset-0 w-full h-full object-contain"
                 style={{ clipPath: `inset(0 0 0 ${compareSplit}%)` }}
               />

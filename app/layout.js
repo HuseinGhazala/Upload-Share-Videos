@@ -12,6 +12,11 @@ export const metadata = {
   title: 'منصّة رفع الفيديو — السعودية',
   description:
     'منصّة سعودية لرفع ومشاركة الفيديوهات بباقات بالريال السعودي، مع حسابات آمنة عبر Supabase.',
+  icons: {
+    icon: '/icon.svg',
+    shortcut: '/icon.svg',
+    apple: '/icon.svg',
+  },
 };
 
 export default function RootLayout({ children }) {

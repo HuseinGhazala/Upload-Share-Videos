@@ -1,4 +1,5 @@
 'use client';
+import Image from 'next/image';
 import { useState } from 'react';
 
 function formatDate(iso) {
@@ -94,16 +95,19 @@ export default function VideoGallery({
           >
             <div className="relative bg-black aspect-video">
               {video.thumbnailUrl ? (
-                <img
+                <Image
                   src={video.thumbnailUrl}
                   alt={`صورة مصغّرة للفيديو`}
+                  fill
+                  unoptimized
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                   className="absolute inset-0 w-full h-full object-cover opacity-60"
                 />
               ) : null}
               <video
                 src={`${video.url}${video.visibility === 'public' ? '' : `?accessToken=${video.accessToken}`}`}
                 controls
-                preload="metadata"
+                preload="none"
                 className="w-full h-full object-contain"
                 onPlay={() => {
                   setPlaying(video.id);

@@ -1,12 +1,20 @@
 'use client';
 import { useState, useCallback, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import VideoUpload from './components/VideoUpload';
 import VideoGallery from './components/VideoGallery';
-import MediaLab from './components/MediaLab';
 import AppNavbar from './components/AppNavbar';
 import { useVideoUpload } from './hooks/useVideoUpload';
 import { useAuth } from './providers/AuthProvider';
 import { MAX_VIDEO_BYTES_PER_UPLOAD } from '@/app/lib/plans';
+
+const MediaLab = dynamic(() => import('./components/MediaLab'), {
+  loading: () => (
+    <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-white/60">
+      جاري تحميل أدوات إضافية...
+    </div>
+  ),
+});
 
 function Toast({ toasts }) {
   return (
@@ -43,6 +51,7 @@ export default function HomePage() {
     setListScope,
   } = useVideoUpload();
   const [toasts, setToasts] = useState([]);
+  const [showMediaLab, setShowMediaLab] = useState(false);
 
   useEffect(() => {
     if (!user) setListScope('public');
@@ -81,10 +90,8 @@ export default function HomePage() {
     <main className="min-h-screen bg-[#050810] text-white">
       {/* خلفية بلمسة ألوان وطنية خفيفة */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute -top-40 start-0 w-96 h-96 bg-emerald-700/15 rounded-full blur-3xl" />
-        <div className="absolute -top-20 end-0 w-80 h-80 bg-indigo-600/18 rounded-full blur-3xl" />
-        <div className="absolute top-1/3 -start-40 w-96 h-96 bg-purple-600/15 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[28rem] h-96 bg-emerald-900/10 rounded-full blur-3xl" />
+        <div className="absolute -top-40 start-0 w-80 h-80 bg-emerald-700/12 rounded-full blur-2xl" />
+        <div className="absolute -top-20 end-0 w-72 h-72 bg-indigo-600/15 rounded-full blur-2xl" />
       </div>
 
       <div className="relative max-w-4xl mx-auto px-4 py-16">
@@ -168,7 +175,17 @@ export default function HomePage() {
             أدوات إضافية
           </h2>
           <p className="text-sm text-white/45 mb-6">معمل ضغط الصور ورفع الصوت — اختياري بجانب الفيديو.</p>
-          <MediaLab onToast={showToast} />
+          {showMediaLab ? (
+            <MediaLab onToast={showToast} />
+          ) : (
+            <button
+              type="button"
+              onClick={() => setShowMediaLab(true)}
+              className="rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-sm text-white/85 hover:bg-white/10 transition"
+            >
+              تحميل الأدوات الإضافية
+            </button>
+          )}
         </div>
       </div>
 
