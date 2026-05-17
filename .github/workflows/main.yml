@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build project
+        run: npm run build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+
+  trigger-jenkins:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Trigger Jenkins
+        run: |
+          curl -X POST \
+          "${{ secrets.JENKINS_URL }}/job/AWorkSpace/job/themify-gemy-project/job/shared-videos-project/job/front/build?token=${{ secrets.PROD_JENKINS_JOB }}" \
+          --user "${{ secrets.JENKINS_USER }}:${{ secrets.JENKINS_API_TOKEN }}"
