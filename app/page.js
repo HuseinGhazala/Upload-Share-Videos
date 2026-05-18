@@ -1,7 +1,6 @@
 'use client';
 import { useState, useCallback, useEffect } from 'react';
 import dynamic from 'next/dynamic';
-import Link from 'next/link';
 import { motion } from 'framer-motion';
 import VideoUpload from './components/VideoUpload';
 import VideoGallery from './components/VideoGallery';
@@ -12,10 +11,10 @@ import { MAX_VIDEO_BYTES_PER_UPLOAD } from '@/app/lib/plans';
 import { getAttributionFromLocation, trackFunnelEvent } from '@/app/lib/analytics/funnel';
 import { CinematicCard, CinematicSection, FloatOrb } from './components/ui/CinematicSection';
 
-const MediaLab = dynamic(() => import('./components/MediaLab'), {
+  const MediaLab = dynamic(() => import('./components/MediaLab'), {
   loading: () => (
     <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-white/60">
-      جاري تحميل أدوات إضافية...
+      جاري تحميل الأدوات الإضافية…
     </div>
   ),
 });
@@ -97,8 +96,8 @@ export default function HomePage() {
       // Keep original URL if parsing fails.
     }
     navigator.clipboard.writeText(fullUrl)
-      .then(() => showToast('تم نسخ الرابط إلى الحافظة', 'success'))
-      .catch(() => showToast('تعذر نسخ الرابط', 'error'));
+      .then(() => showToast('تم نسخ الرابط إلى الحافظة بنجاح', 'success'))
+      .catch(() => showToast('تعذّر نسخ الرابط، حاول مرة أخرى.', 'error'));
   }, [showToast]);
 
   return (
@@ -114,62 +113,51 @@ export default function HomePage() {
         <CinematicSection className="text-center mb-12 sm:mb-16" y={24}>
           <div className="chip mb-5">
             <span className="text-base" aria-hidden>
-              🇸🇦
+              ✨
             </span>
-            منصّة سعودية — أسعار بالريال السعودي
+            مجاني للجميع — بدون تسجيل ولا حساب
           </div>
           <h1 className="headline-display bg-gradient-to-b from-white via-indigo-100 to-indigo-300 bg-clip-text text-transparent">
-            تجربة رفع فيديو\nراقية وسريعة
+            ارفع فيديوهاتك الآن مجاناً
           </h1>
           <p className="mt-5 text-base sm:text-lg text-muted max-w-2xl mx-auto leading-relaxed">
-            هوية بصرية احترافية، تجربة استخدام سلسة، وباقات مرنة للمبدعين والفرق داخل المملكة.
+            ابدأ الرفع مباشرة دون أي خطوات تسجيل. واجهة عربية أنيقة، روابط فورية للمشاركة، وبدون أي تكاليف.
           </p>
           <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
-            <Link
-              href="/pricing?from=home_hero"
-              onClick={() => trackFunnelEvent('view_pricing', { source: 'home_hero' })}
-              className="btn-primary"
-            >
-              ابدأ اشتراكك الآن
-            </Link>
-            <Link
-              href="/signup?from=home_hero"
-              onClick={() => trackFunnelEvent('start_signup', { source: 'home_hero' })}
-              className="btn-secondary"
-            >
-              إنشاء حساب
-            </Link>
+            <a href="#upload-zone" className="btn-primary">
+              ابدأ الرفع الآن
+            </a>
           </div>
           <div className="mt-5 flex flex-wrap justify-center gap-2">
-            <span className="chip">تفعيل سريع</span>
-            <span className="chip">واجهة أنيقة</span>
-            <span className="chip">دعم عربي</span>
+            <span className="chip">بدون تسجيل دخول</span>
+            <span className="chip">واجهة عربية أنيقة</span>
+            <span className="chip">روابط مباشرة جاهزة للمشاركة</span>
           </div>
         </CinematicSection>
 
         <CinematicSection className="mb-10 grid gap-4 sm:grid-cols-3" delay={0.1}>
           <CinematicCard className="p-5 text-sm">
-            <p className="text-emerald-200 font-semibold mb-2">1) سجّل حسابك</p>
-            <p className="text-white/60">خطوة سريعة ببريدك خلال أقل من دقيقة.</p>
+            <p className="text-emerald-200 font-semibold mb-2">١. اختر فيديوك</p>
+            <p className="text-white/60">اسحب الملف وأفلِته في منطقة الرفع، أو انقر للاختيار من جهازك.</p>
           </CinematicCard>
           <CinematicCard className="p-5 text-sm">
-            <p className="text-indigo-200 font-semibold mb-2">2) اختر الباقة المناسبة</p>
-            <p className="text-white/60">اختر باقة تناسب حجم الاستخدام وخطة النشر.</p>
+            <p className="text-indigo-200 font-semibold mb-2">٢. حدّد مستوى الظهور</p>
+            <p className="text-white/60">اختر بين «عام» أو «خاص» أو «غير مُدرَج» للتحكّم بمن يستطيع المشاهدة.</p>
           </CinematicCard>
           <CinematicCard className="p-5 text-sm">
-            <p className="text-amber-200 font-semibold mb-2">3) ارفع إيصال الدفع</p>
-            <p className="text-white/60">نراجع الطلب ونفعّل الباقة سريعًا في نفس اليوم غالبًا.</p>
+            <p className="text-amber-200 font-semibold mb-2">٣. شارك الرابط</p>
+            <p className="text-white/60">احصل على رابط مباشر فور انتهاء الرفع، وانسخه بضغطة واحدة.</p>
           </CinematicCard>
         </CinematicSection>
 
         <CinematicSection delay={0.1}>
-          <div className="glass-panel p-6 sm:p-8">
+          <div id="upload-zone" className="glass-panel p-6 sm:p-8 scroll-mt-24">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-              <h2 className="text-xl font-semibold">محطة الرفع الذكية</h2>
-              <span className="chip">حتى 50MB لكل فيديو</span>
+              <h2 className="text-xl font-semibold">منطقة الرفع المجانية</h2>
+              <span className="chip">حتى ٥٠ ميجابايت لكل فيديو</span>
             </div>
             <p className="text-sm text-white/60 mb-5">
-              واجهة رفع محسّنة مع متابعة تقدم واضحة وتحكم دقيق في مستوى الظهور.
+              ارفع فيديوهاتك مباشرة بدون تسجيل، مع شريط تقدّم مباشر وتحكم كامل في مستوى الظهور.
             </p>
           <VideoUpload
             onUpload={upload}
@@ -187,7 +175,7 @@ export default function HomePage() {
         {stats && (
           <CinematicSection className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-3" delay={0.1}>
             <motion.div whileHover={{ y: -2 }} className="glass-panel p-4 rounded-xl border">
-              <p className="text-xs text-white/50">عدد الفيديوهات</p>
+              <p className="text-xs text-white/50">إجمالي الفيديوهات</p>
               <p className="text-xl font-bold tabular-nums">{stats.totalVideos}</p>
             </motion.div>
             <motion.div whileHover={{ y: -2 }} className="glass-panel p-4 rounded-xl border">
@@ -195,11 +183,11 @@ export default function HomePage() {
               <p className="text-xl font-bold tabular-nums">{stats.totalViews}</p>
             </motion.div>
             <motion.div whileHover={{ y: -2 }} className="glass-panel p-4 rounded-xl border">
-              <p className="text-xs text-white/50">عامة</p>
+              <p className="text-xs text-white/50">فيديوهات عامة</p>
               <p className="text-xl font-bold tabular-nums">{stats.byVisibility.public}</p>
             </motion.div>
             <motion.div whileHover={{ y: -2 }} className="glass-panel p-4 rounded-xl border">
-              <p className="text-xs text-white/50">خاصة ومخفيّة</p>
+              <p className="text-xs text-white/50">خاصة وغير مُدرَجة</p>
               <p className="text-xl font-bold tabular-nums">
                 {stats.byVisibility.private + stats.byVisibility.unlisted}
               </p>
@@ -226,10 +214,10 @@ export default function HomePage() {
             <span className="text-2xl" aria-hidden>
               ✨
             </span>
-            أدوات إضافية
+            أدوات مساعدة
           </h2>
           <p className="text-sm text-white/45 mb-6">
-            معمل ضغط الصور واستخراج الصوت بتجربة سلسة وانسيابية في نفس الواجهة.
+            ضغط الصور واستخراج الصوت من الفيديو ضمن نفس الواجهة، بسرعة وبضغطة واحدة.
           </p>
           {showMediaLab ? (
             <MediaLab onToast={showToast} />
@@ -239,7 +227,7 @@ export default function HomePage() {
               onClick={() => setShowMediaLab(true)}
               className="btn-secondary"
             >
-              تحميل الأدوات الإضافية
+              فتح الأدوات المساعدة
             </button>
           )}
         </CinematicSection>

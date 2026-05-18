@@ -30,13 +30,13 @@ export async function POST(request, { params }) {
 
   const decision = body.decision?.toString().trim();
   if (decision !== 'approve' && decision !== 'reject') {
-    return NextResponse.json({ success: false, error: 'decision يجب أن يكون approve أو reject' }, { status: 400 });
+    return NextResponse.json({ success: false, error: 'قيمة decision يجب أن تكون approve أو reject.' }, { status: 400 });
   }
 
   let adminNote = body.adminNote?.toString?.() ?? '';
   adminNote = adminNote.trim().length > 2000 ? adminNote.trim().slice(0, 2000) : adminNote.trim();
   if (decision === 'reject' && !adminNote) {
-    adminNote = 'مرفوض';
+    adminNote = 'تم رفض الطلب';
   }
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -56,11 +56,11 @@ export async function POST(request, { params }) {
     .maybeSingle();
 
   if (fetchErr || !sub) {
-    return NextResponse.json({ success: false, error: 'الطلب غير موجود' }, { status: 404 });
+    return NextResponse.json({ success: false, error: 'الطلب غير موجود.' }, { status: 404 });
   }
 
   if (sub.status !== 'pending') {
-    return NextResponse.json({ success: false, error: 'تمت معالجة هذا الطلب مسبقاً' }, { status: 400 });
+    return NextResponse.json({ success: false, error: 'تمت معالجة هذا الطلب مسبقاً.' }, { status: 400 });
   }
 
   const now = new Date().toISOString();
@@ -69,7 +69,7 @@ export async function POST(request, { params }) {
     const act = await updateProfilePaidPlan(admin, sub.user_id, sub.plan_key);
     if (!act.ok) {
       return NextResponse.json(
-        { success: false, error: act.error === 'no_profile' ? 'لا يوجد ملف للمستخدم' : act.error },
+        { success: false, error: act.error === 'no_profile' ? 'لا يوجد ملف تعريفي لهذا المستخدم.' : act.error },
         { status: act.error === 'no_profile' ? 404 : 500 }
       );
     }

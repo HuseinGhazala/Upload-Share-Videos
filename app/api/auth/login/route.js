@@ -39,7 +39,7 @@ export async function POST(request) {
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json({ ok: false, error: 'بيانات الطلب غير صالحة' }, { status: 400 });
+    return NextResponse.json({ ok: false, error: 'بيانات الطلب غير صالحة.' }, { status: 400 });
   }
 
   const email = normalize(body.email).toLowerCase();
@@ -48,7 +48,7 @@ export async function POST(request) {
   const ip = getClientIp(request);
 
   if (!email || !password) {
-    return NextResponse.json({ ok: false, error: 'أدخل البريد الإلكتروني وكلمة المرور' }, { status: 400 });
+    return NextResponse.json({ ok: false, error: 'يرجى إدخال البريد الإلكتروني وكلمة المرور.' }, { status: 400 });
   }
 
   const gate = evaluateLoginAttempt(ip, email);
@@ -56,7 +56,7 @@ export async function POST(request) {
     return NextResponse.json(
       {
         ok: false,
-        error: 'تم إيقاف تسجيل الدخول مؤقتاً بسبب محاولات متكررة. حاول لاحقاً.',
+        error: 'تم إيقاف محاولات تسجيل الدخول مؤقتاً لحماية حسابك. يرجى المحاولة بعد قليل.',
       },
       {
         status: 429,
@@ -69,21 +69,21 @@ export async function POST(request) {
   if (!captcha.ok) {
     markLoginFailure(ip, email);
     return NextResponse.json(
-      { ok: false, error: 'فشل تحقق الأمان. أعد المحاولة.' },
+      { ok: false, error: 'لم يكتمل التحقق الأمني. يرجى المحاولة مرة أخرى.' },
       { status: 400 }
     );
   }
 
   const supabase = getSupabaseServerClient();
   if (!supabase) {
-    return NextResponse.json({ ok: false, error: 'إعدادات الخادم غير مكتملة' }, { status: 500 });
+    return NextResponse.json({ ok: false, error: 'إعدادات الخادم غير مكتملة، يرجى المحاولة لاحقاً.' }, { status: 500 });
   }
 
   const { error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) {
     markLoginFailure(ip, email);
     return NextResponse.json(
-      { ok: false, error: 'بيانات الدخول غير صحيحة أو الحساب غير مفعل' },
+      { ok: false, error: 'البيانات غير صحيحة، أو أن الحساب لم يُفعَّل بعد.' },
       { status: 401 }
     );
   }

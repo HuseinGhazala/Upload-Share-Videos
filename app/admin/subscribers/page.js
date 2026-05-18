@@ -7,7 +7,7 @@ import SubscriberRowActions from './SubscriberRowActions';
 export const dynamic = 'force-dynamic';
 
 export const metadata = {
-  title: 'المشتركون والباقات',
+  title: 'المشتركون والباقات — لوحة الإدارة',
   robots: { index: false, follow: false },
 };
 
@@ -15,7 +15,7 @@ function creditsLabel(row) {
   const plan = row.plan_key ?? PLAN_KEYS.NONE;
   if (plan === PLAN_KEYS.UNLIMITED) return 'غير محدود';
   const n = row.upload_credits_remaining;
-  if (typeof n === 'number' && n >= 0) return `${n} فيديو متبقي`;
+  if (typeof n === 'number' && n >= 0) return `${n} فيديو متبقٍّ`;
   return '—';
 }
 
@@ -33,12 +33,12 @@ export default async function AdminSubscribersPage() {
         <div className="max-w-4xl mx-auto text-center">
           <AdminNav current="subscribers" />
           <p className="text-red-300">
-            غير مضبوط: أضف <code className="text-white">SUPABASE_SERVICE_ROLE_KEY</code> و{' '}
-            <code className="text-white">NEXT_PUBLIC_SUPABASE_URL</code> في{' '}
-            <code className="text-white">.env.local</code>
+            الإعدادات غير مكتملة: يرجى إضافة <code className="text-white">SUPABASE_SERVICE_ROLE_KEY</code> و{' '}
+            <code className="text-white">NEXT_PUBLIC_SUPABASE_URL</code> في ملف{' '}
+            <code className="text-white">.env.local</code>.
           </p>
           <Link href="/pricing" className="inline-block mt-6 text-emerald-400 hover:text-emerald-300">
-            ← العودة للأسعار
+            ← العودة إلى صفحة الأسعار
           </Link>
         </div>
       </main>
@@ -59,27 +59,27 @@ export default async function AdminSubscribersPage() {
       <div className="max-w-6xl mx-auto">
         <p className="text-center mb-4">
           <Link href="/pricing" className="text-emerald-400 hover:text-emerald-300 text-sm">
-            ← العودة للأسعار
+            ← العودة إلى صفحة الأسعار
           </Link>
         </p>
 
         <h1 className="text-2xl font-bold text-center mb-2">المشتركون والباقات</h1>
         <p className="text-white/50 text-sm text-center mb-8">
-          عرض من جدول <code className="text-indigo-300">profiles</code> في Supabase (آخر تحديث أولاً). من عمود
-          «إجراءات» يمكنك <span className="text-white/70">تفعيل</span> باقة لأي مستخدم أو{' '}
-          <span className="text-white/70">إلغاء</span> الباقة الحالية (يحتاج دخول الإدارة).
+          عرض البيانات من جدول <code className="text-indigo-300">profiles</code> في Supabase (مرتّبة بالأحدث).
+          ومن عمود «إجراءات» يمكنك <span className="text-white/70">تفعيل</span> باقة لأي مستخدم أو{' '}
+          <span className="text-white/70">إلغاء</span> الباقة الحالية (يستدعي ذلك الدخول كمسؤول).
         </p>
 
         <AdminNav current="subscribers" />
 
         {error && (
           <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-red-300 text-sm mb-6">
-            تعذر القراءة: {error.message}
+            تعذّر تحميل البيانات: {error.message}
           </div>
         )}
 
         {!error && (!rows || rows.length === 0) && (
-          <p className="text-center text-white/45 py-12">لا توجد صفوف في profiles بعد.</p>
+          <p className="text-center text-white/45 py-12">لا توجد بيانات في جدول profiles حتى الآن.</p>
         )}
 
         {!error && rows && rows.length > 0 && (
@@ -87,14 +87,14 @@ export default async function AdminSubscribersPage() {
             <table className="w-full text-sm text-right min-w-[960px]">
               <thead>
                 <tr className="border-b border-white/10 text-white/55">
-                  <th className="p-3 font-semibold">البريد</th>
+                  <th className="p-3 font-semibold">البريد الإلكتروني</th>
                   <th className="p-3 font-semibold">الاسم</th>
                   <th className="p-3 font-semibold">الباقة الحالية</th>
-                  <th className="p-3 font-semibold">رصيد الرفع</th>
+                  <th className="p-3 font-semibold">رصيد الرفع المتاح</th>
                   <th className="p-3 font-semibold">حالة الاشتراك</th>
                   <th className="p-3 font-semibold w-[1%] whitespace-nowrap">إجراءات</th>
                   <th className="p-3 font-semibold">معرّف المستخدم</th>
-                  <th className="p-3 font-semibold">أنشئ في</th>
+                  <th className="p-3 font-semibold">تاريخ الإنشاء</th>
                   <th className="p-3 font-semibold">آخر تحديث</th>
                 </tr>
               </thead>
@@ -107,7 +107,7 @@ export default async function AdminSubscribersPage() {
                       <span className="text-emerald-200/95">{planLabelAr(row.plan_key)}</span>
                       {row.subscription_tier && row.subscription_tier !== 'free' && (
                         <span className="block text-[10px] text-white/35 mt-1">
-                          (قديم: {row.subscription_tier})
+                          (قيمة قديمة: {row.subscription_tier})
                         </span>
                       )}
                     </td>
@@ -148,7 +148,7 @@ export default async function AdminSubscribersPage() {
         )}
 
         <p className="mt-8 text-xs text-white/35 text-center leading-relaxed">
-          الوصول يتطلّب تسجيل الدخول من <code className="text-white/50">/admin/login</code> برمز الإدارة.
+          يستلزم الوصول إلى هذه الصفحة الدخول عبر <code className="text-white/50">/admin/login</code> باستخدام رمز الإدارة.
         </p>
       </div>
     </main>

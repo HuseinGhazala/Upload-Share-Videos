@@ -3,9 +3,9 @@
 import { useState } from 'react';
 
 const PLANS = [
-  { value: 'single', label: 'فيديو واحد — ١٠ ر.س (رصيد ١)' },
-  { value: 'triple', label: 'ثلاثة فيديوهات — ٢٥ ر.س (رصيد ٣)' },
-  { value: 'unlimited', label: 'غير محدود — ٥٠ ر.س' },
+  { value: 'single', label: 'فيديو واحد — ١٠ ر.س (رصيد فيديو واحد)' },
+  { value: 'triple', label: 'ثلاثة فيديوهات — ٢٥ ر.س (رصيد ٣ فيديوهات)' },
+  { value: 'unlimited', label: 'باقة غير محدودة — ٥٠ ر.س' },
 ];
 
 export default function BillingActivationForm() {
@@ -37,10 +37,10 @@ export default function BillingActivationForm() {
       if (!res.ok) {
         throw new Error(data.error || `خطأ ${res.status}`);
       }
-      setMessage('تم تفعيل الباقة بنجاح. يمكن للمستخدم تحديث صفحة «حسابي» أو إعادة تسجيل الدخول.');
+      setMessage('تم تفعيل الباقة بنجاح. ينبغي للمستخدم تحديث صفحة «حسابي» أو إعادة تسجيل الدخول لرؤية التحديث.');
       setAdminSecret('');
     } catch (err) {
-      setError(err.message || 'فشل الطلب');
+      setError(err.message || 'تعذّر تنفيذ الطلب.');
     } finally {
       setLoading(false);
     }
@@ -55,7 +55,7 @@ export default function BillingActivationForm() {
           required
           dir="ltr"
           className="w-full rounded-xl bg-white/10 border border-white/20 px-4 py-3 text-white outline-none focus:border-emerald-500 font-mono text-sm"
-          placeholder="من Supabase → Authentication → Users"
+          placeholder="انسخه من Supabase → Authentication → Users"
           value={userId}
           onChange={(e) => setUserId(e.target.value)}
           autoComplete="off"
@@ -63,7 +63,7 @@ export default function BillingActivationForm() {
       </div>
 
       <div>
-        <label className="block text-sm text-white/70 mb-1">الباقة</label>
+        <label className="block text-sm text-white/70 mb-1">الباقة المراد تفعيلها</label>
         <select
           value={planKey}
           onChange={(e) => setPlanKey(e.target.value)}
@@ -78,7 +78,7 @@ export default function BillingActivationForm() {
       </div>
 
       <div>
-        <label className="block text-sm text-white/70 mb-1">سرّ التفعيل (نفس BILLING_ADMIN_SECRET)</label>
+        <label className="block text-sm text-white/70 mb-1">رمز التفعيل (نفس قيمة BILLING_ADMIN_SECRET)</label>
         <input
           type="password"
           required
@@ -105,7 +105,7 @@ export default function BillingActivationForm() {
         disabled={loading}
         className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 font-semibold transition"
       >
-        {loading ? 'جاري التفعيل…' : 'تفعيل الباقة'}
+        {loading ? 'جاري تفعيل الباقة…' : 'تفعيل الباقة الآن'}
       </button>
     </form>
   );

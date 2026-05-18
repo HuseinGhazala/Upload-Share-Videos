@@ -1,0 +1,63 @@
+export const CATEGORIES = [
+  { id: 'all', label: 'كل المنتجات' },
+  { id: 'electronics', label: 'إلكترونيات' },
+  { id: 'fashion', label: 'أزياء' },
+  { id: 'home', label: 'منزل ومعيشة' },
+];
+
+export const PRODUCTS = [
+  {
+    id: 'p1',
+    name: 'سمّاعات لاسلكية احترافية',
+    price: 349,
+    category: 'electronics',
+    badge: 'الأكثر مبيعاً',
+    image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600&q=80',
+    desc: 'عزل نشط للضوضاء وعمر بطارية يصل إلى ٣٢ ساعة من الاستخدام المتواصل.',
+  },
+  {
+    id: 'p2',
+    name: 'ساعة ذكية نحيفة',
+    price: 599,
+    category: 'electronics',
+    badge: 'وصل حديثاً',
+    image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&q=80',
+    desc: 'تتبّع صحي متقدّم وشاشة AMOLED عالية الوضوح.',
+  },
+  {
+    id: 'p3',
+    name: 'حقيبة جلدية للاستخدام اليومي',
+    price: 289,
+    category: 'fashion',
+    badge: 'اختيار مميّز',
+    image: 'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=600&q=80',
+    desc: 'جلد طبيعي وتقسيمات داخلية مناسبة لاحتياجاتك في العمل.',
+  },
+  {
+    id: 'p4',
+    name: 'حذاء رياضي خفيف',
+    price: 419,
+    category: 'fashion',
+    badge: '',
+    image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600&q=80',
+    desc: 'نعل مرن يمنحك راحة مثالية للمشي والجري اليومي.',
+  },
+  {
+    id: 'p5',
+    name: 'مصباح مكتبي ذكي',
+    price: 159,
+    category: 'home',
+    badge: 'وفّر',
+    image: 'https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=600&q=80',
+    desc: 'إضاءة قابلة للتعديل بالكامل عبر التطبيق ومناسبة لجميع المهام.',
+  },
+  {
+    id: 'p6',
+    name: 'طقم أواني سيراميك عصري',
+    price: 219,
+    category: 'home',
+    badge: '',
+    image: 'https://images.unsplash.com/photo-1556910103-1c02745aae4d?w=600&q=80',
+    desc: 'تصميم أنيق ومقاوم للحرارة العالية وآمن في غسّالة الصحون.',
+  },
+];

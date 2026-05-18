@@ -40,7 +40,7 @@ function ResetPasswordForm() {
     e.preventDefault();
     setError('');
     if (password !== confirmPassword) {
-      setError('كلمتا المرور غير متطابقتين.');
+      setError('كلمتا المرور غير متطابقتين، يرجى المراجعة.');
       return;
     }
     setLoading(true);
@@ -53,13 +53,13 @@ function ResetPasswordForm() {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        throw new Error(data.error || 'تعذر تحديث كلمة المرور');
+        throw new Error(data.error || 'تعذّر تحديث كلمة المرور، حاول مرة أخرى.');
       }
       router.push('/login?reset=1');
       router.refresh();
     } catch (err) {
       const raw = typeof err?.message === 'string' ? err.message : '';
-      setError(raw || 'تعذر تحديث كلمة المرور');
+      setError(raw || 'تعذّر تحديث كلمة المرور، حاول مرة أخرى.');
     } finally {
       setLoading(false);
     }
@@ -76,29 +76,29 @@ function ResetPasswordForm() {
           className="glass-panel p-8 sm:p-10"
         >
           <h1 className="text-3xl font-bold text-center mb-2 bg-gradient-to-b from-white to-indigo-200 bg-clip-text text-transparent">
-            كلمة مرور جديدة
+            تعيين كلمة مرور جديدة
           </h1>
           <p className="text-white/55 text-sm text-center mb-8">
-            اختر كلمة مرور جديدة لحسابك.
+            أنشئ كلمة مرور جديدة وآمنة لحسابك.
           </p>
           {!isSupabaseBrowserConfigured() && (
             <p className="text-xs text-amber-200/90 bg-amber-500/15 border border-amber-400/25 rounded-xl px-3 py-3 mb-4 leading-relaxed whitespace-pre-wrap">
-              تنبيه: إعدادات Supabase الظاهرة للمتصفح تبدو غير جاهزة. راجع متغيرات NEXT_PUBLIC ثم أعد النشر.
+              تنبيه: يبدو أن إعدادات الاتصال غير جاهزة في النسخة الحالية. راجع متغيرات NEXT_PUBLIC ثم أعد نشر الموقع.
             </p>
           )}
           {!sessionChecked ? (
-            <p className="text-center text-white/50 text-sm">جاري التحقق من الرابط…</p>
+            <p className="text-center text-white/50 text-sm">جاري التحقق من صلاحية الرابط…</p>
           ) : !hasSession ? (
             <motion.div className="space-y-4">
               <p className="text-sm text-amber-200/90 bg-amber-500/15 border border-amber-400/25 rounded-lg px-3 py-3">
-                الرابط غير صالح أو انتهت صلاحيته. اطلب رابطاً جديداً من صفحة استعادة كلمة المرور.
+                الرابط غير صالح أو انتهت صلاحيته. يمكنك طلب رابط جديد من صفحة استعادة كلمة المرور.
               </p>
               <Link href="/forgot-password" className="btn-primary w-full inline-block text-center">
                 طلب رابط جديد
               </Link>
               <p className="text-center text-sm text-white/50">
                 <Link href="/login" className="text-indigo-300 hover:text-indigo-200">
-                  تسجيل الدخول
+                  العودة إلى تسجيل الدخول
                 </Link>
               </p>
             </motion.div>
@@ -142,7 +142,7 @@ function ResetPasswordForm() {
                 </p>
               )}
               <button type="submit" disabled={loading} className="btn-primary w-full disabled:opacity-50">
-                {loading ? 'جاري الحفظ…' : 'حفظ كلمة المرور'}
+                {loading ? 'جاري الحفظ…' : 'حفظ كلمة المرور الجديدة'}
               </button>
             </form>
           )}
@@ -157,7 +157,7 @@ export default function ResetPasswordPage() {
     <Suspense
       fallback={
         <main className="min-h-screen bg-[#0a0a12] text-white flex items-center justify-center">
-          <p className="text-white/50">جاري التحميل…</p>
+          <p className="text-white/50">جاري تحميل الصفحة…</p>
         </main>
       }
     >

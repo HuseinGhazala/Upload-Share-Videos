@@ -38,7 +38,7 @@ function ForgotPasswordForm() {
     setError('');
     setMessage('');
     if (CAPTCHA.provider && CAPTCHA.siteKey && !captchaToken) {
-      setError('أكمل اختبار التحقق الأمني أولاً.');
+      setError('يرجى إكمال خطوة التحقق الأمني قبل المتابعة.');
       return;
     }
     setLoading(true);
@@ -55,15 +55,15 @@ function ForgotPasswordForm() {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        throw new Error(data.error || 'تعذر إرسال الطلب');
+        throw new Error(data.error || 'تعذّر إرسال الطلب، حاول مرة أخرى.');
       }
       setMessage(
         data.message ||
-          'إذا كان البريد مسجّلاً لدينا، ستصلك رسالة تحتوي رابط إعادة تعيين كلمة المرور.'
+          'إذا كان البريد مسجّلاً لدينا فستصلك رسالة تتضمن رابط إعادة تعيين كلمة المرور خلال دقائق.'
       );
     } catch (err) {
       const raw = typeof err?.message === 'string' ? err.message : '';
-      setError(raw || 'تعذر إرسال الطلب');
+      setError(raw || 'تعذّر إرسال الطلب، حاول مرة أخرى.');
     } finally {
       setLoading(false);
     }
@@ -86,11 +86,11 @@ function ForgotPasswordForm() {
             نسيت كلمة المرور؟
           </h1>
           <p className="text-white/55 text-sm text-center mb-8">
-            أدخل بريدك الإلكتروني وسنرسل لك رابطاً لإنشاء كلمة مرور جديدة.
+            أدخل بريدك الإلكتروني، وسنرسل إليك رابطاً آمناً لإنشاء كلمة مرور جديدة.
           </p>
           {!isSupabaseBrowserConfigured() && (
             <p className="text-xs text-amber-200/90 bg-amber-500/15 border border-amber-400/25 rounded-xl px-3 py-3 mb-4 leading-relaxed whitespace-pre-wrap">
-              تنبيه: إعدادات Supabase الظاهرة للمتصفح تبدو غير جاهزة. راجع متغيرات NEXT_PUBLIC ثم أعد النشر.
+              تنبيه: يبدو أن إعدادات الاتصال غير جاهزة في النسخة الحالية. راجع متغيرات NEXT_PUBLIC ثم أعد نشر الموقع.
             </p>
           )}
           <form onSubmit={onSubmit} className="space-y-4">
@@ -140,12 +140,12 @@ function ForgotPasswordForm() {
               </p>
             )}
             <button type="submit" disabled={loading} className="btn-primary w-full disabled:opacity-50">
-              {loading ? 'جاري الإرسال…' : 'إرسال رابط الاستعادة'}
+              {loading ? 'جاري الإرسال…' : 'إرسال رابط إعادة التعيين'}
             </button>
           </form>
           <p className="text-center text-sm text-white/50 mt-6">
             <Link href="/login" className="text-indigo-300 hover:text-indigo-200">
-              العودة لتسجيل الدخول
+              ← العودة إلى تسجيل الدخول
             </Link>
           </p>
         </motion.div>
@@ -159,7 +159,7 @@ export default function ForgotPasswordPage() {
     <Suspense
       fallback={
         <main className="min-h-screen bg-[#0a0a12] text-white flex items-center justify-center">
-          <p className="text-white/50">جاري التحميل…</p>
+          <p className="text-white/50">جاري تحميل الصفحة…</p>
         </main>
       }
     >

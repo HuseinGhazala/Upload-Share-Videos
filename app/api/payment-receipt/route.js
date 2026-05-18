@@ -24,19 +24,19 @@ const MIME_TO_EXT = {
 export async function POST(request) {
   const user = await getOptionalAuthUser();
   if (!user) {
-    return NextResponse.json({ success: false, error: 'يجب تسجيل الدخول' }, { status: 401 });
+    return NextResponse.json({ success: false, error: 'يلزم تسجيل الدخول لإتمام هذه العملية.' }, { status: 401 });
   }
 
   const limited = rateLimit(`payment-receipt:${user.id}`, { max: 8, windowMs: 60_000 });
   if (!limited.allowed) {
-    return NextResponse.json({ success: false, error: 'طلبات كثيرة. حاول لاحقاً.' }, { status: 429 });
+    return NextResponse.json({ success: false, error: 'تم تلقّي عدد كبير من الطلبات في وقت قصير، يرجى المحاولة بعد قليل.' }, { status: 429 });
   }
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !serviceKey) {
     return NextResponse.json(
-      { success: false, error: 'الخادم غير مضبوط (Supabase service role)' },
+      { success: false, error: 'الخادم غير مهيّأ بشكل صحيح (Supabase service role).' },
       { status: 501 }
     );
   }
@@ -45,22 +45,22 @@ export async function POST(request) {
   try {
     form = await request.formData();
   } catch {
-    return NextResponse.json({ success: false, error: 'نموذج غير صالح' }, { status: 400 });
+    return NextResponse.json({ success: false, error: 'نموذج الإرسال غير صالح.' }, { status: 400 });
   }
 
   const planKey = form.get('planKey')?.toString?.() ?? '';
   if (!VALID_PLANS.has(planKey)) {
-    return NextResponse.json({ success: false, error: 'باقة غير صالحة' }, { status: 400 });
+    return NextResponse.json({ success: false, error: 'الباقة المختارة غير معتمدة.' }, { status: 400 });
   }
 
   const file = form.get('file');
   if (!file || typeof file === 'string' || !file.size) {
-    return NextResponse.json({ success: false, error: 'ارفع ملف الإيصال' }, { status: 400 });
+    return NextResponse.json({ success: false, error: 'يرجى إرفاق ملف الإيصال.' }, { status: 400 });
   }
 
   if (file.size > MAX_BYTES) {
     return NextResponse.json(
-      { success: false, error: 'الملف كبير جداً (الحد ٥ ميجابايت)' },
+      { success: false, error: 'حجم الملف يتجاوز الحد المسموح به (٥ ميجابايت).' },
       { status: 400 }
     );
   }
@@ -69,7 +69,7 @@ export async function POST(request) {
   const ext = MIME_TO_EXT[mimeType];
   if (!ext) {
     return NextResponse.json(
-      { success: false, error: 'يُقبل PDF أو صورة (JPG, PNG, WebP, GIF)' },
+      { success: false, error: 'يُقبل ملف PDF أو صورة (JPG, PNG, WebP, GIF) فقط.' },
       { status: 400 }
     );
   }
@@ -94,7 +94,7 @@ export async function POST(request) {
   if (uploadError) {
     console.error('payment-receipt storage upload:', uploadError);
     return NextResponse.json(
-      { success: false, error: 'فشل رفع الملف. تحقق من إنشاء حاوية payment-receipts في Supabase.' },
+      { success: false, error: 'تعذّر رفع الملف. تأكّد من إنشاء حاوية payment-receipts في Supabase.' },
       { status: 500 }
     );
   }
@@ -114,7 +114,7 @@ export async function POST(request) {
     await admin.storage.from(BUCKET).remove([storagePath]).catch(() => {});
     console.error('payment_submissions insert:', insertError);
     return NextResponse.json(
-      { success: false, error: insertError.message || 'فشل حفظ الطلب' },
+      { success: false, error: insertError.message || 'تعذّر حفظ الطلب، يرجى المحاولة مرة أخرى.' },
       { status: 500 }
     );
   }
@@ -122,7 +122,7 @@ export async function POST(request) {
   return NextResponse.json({
     success: true,
     submissionId,
-    message: 'تم استلام الإيصال. سيُراجع الطلب قريباً.',
+    message: 'تم استلام الإيصال بنجاح. سنراجع الطلب وننتهي منه في أقرب وقت ممكن.',
   });
 }
 

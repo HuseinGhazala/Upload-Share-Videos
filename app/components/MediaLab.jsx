@@ -22,7 +22,7 @@ async function compressImage(file, { maxWidth, quality, format }) {
 
   const mime = format === 'png' ? 'image/png' : format === 'webp' ? 'image/webp' : 'image/jpeg';
   const blob = await new Promise((resolve) => canvas.toBlob(resolve, mime, quality / 100));
-  if (!blob) throw new Error('فشل ضغط الصورة');
+  if (!blob) throw new Error('تعذّر ضغط الصورة، حاول بإعدادات مختلفة.');
 
   const ext = format === 'png' ? 'png' : format === 'webp' ? 'webp' : 'jpg';
   return new File([blob], `${file.name.replace(/\.[^/.]+$/, '')}.${ext}`, { type: mime });
@@ -107,14 +107,14 @@ export default function MediaLab({ onToast }) {
 
       const res = await fetch('/api/upload-image', { method: 'POST', body: formData });
       const data = await res.json();
-      if (!res.ok || !data.success) throw new Error(data.error || 'فشل رفع الصورة');
+      if (!res.ok || !data.success) throw new Error(data.error || 'تعذّر رفع الصورة، حاول مرة أخرى.');
 
       setImageResult({
         ...data.item,
         optimizedSize: optimized.size,
         originalSize: imageFile.size,
       });
-      onToast?.('تم تحسين الصورة ورفعها', 'success');
+      onToast?.('تم تحسين الصورة ورفعها بنجاح', 'success');
     } catch (error) {
       onToast?.(`❌ ${error.message}`, 'error');
     } finally {
@@ -130,9 +130,9 @@ export default function MediaLab({ onToast }) {
       formData.append('audio', audioFile);
       const res = await fetch('/api/upload-audio', { method: 'POST', body: formData });
       const data = await res.json();
-      if (!res.ok || !data.success) throw new Error(data.error || 'فشل رفع الصوت');
+      if (!res.ok || !data.success) throw new Error(data.error || 'تعذّر رفع الملف الصوتي، حاول مرة أخرى.');
       setAudioResult(data.item);
-      onToast?.('تم رفع الملف الصوتي', 'success');
+      onToast?.('تم رفع الملف الصوتي بنجاح', 'success');
     } catch (error) {
       onToast?.(`❌ ${error.message}`, 'error');
     } finally {
@@ -143,8 +143,8 @@ export default function MediaLab({ onToast }) {
   return (
     <section className="mt-10 grid gap-6 lg:grid-cols-2">
       <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
-        <h3 className="text-lg font-semibold">معمل الصور</h3>
-        <p className="text-sm text-white/60 mt-1">ضغط الصور وتغيير الصيغة والعرض قبل الرفع — يوفّر بياناتك.</p>
+        <h3 className="text-lg font-semibold">تحسين الصور</h3>
+        <p className="text-sm text-white/60 mt-1">اضغط الصور وغيّر صيغتها وأبعادها قبل الرفع لتوفير حجم البيانات.</p>
 
         <input
           type="file"
@@ -155,7 +155,7 @@ export default function MediaLab({ onToast }) {
 
         <div className="mt-4 grid grid-cols-3 gap-3">
           <label className="text-xs text-white/70">
-            أقصى عرض
+            أقصى عرض (بكسل)
             <input
               type="number"
               className="mt-1 w-full rounded-md bg-white/10 border border-white/20 px-2 py-1"
@@ -164,7 +164,7 @@ export default function MediaLab({ onToast }) {
             />
           </label>
           <label className="text-xs text-white/70">
-            الجودة
+            مستوى الجودة
             <input
               type="number"
               min={10}
@@ -175,7 +175,7 @@ export default function MediaLab({ onToast }) {
             />
           </label>
           <label className="text-xs text-white/70">
-            الصيغة
+            صيغة الإخراج
             <select
               className="mt-1 w-full rounded-md bg-white/10 border border-white/20 px-2 py-1"
               value={format}
@@ -190,7 +190,7 @@ export default function MediaLab({ onToast }) {
 
         {originalPreviewUrl && optimizedPreviewUrl && (
           <div className="mt-4">
-            <p className="text-xs text-white/60 mb-2">معاينة مباشرة: قبل وبعد</p>
+            <p className="text-xs text-white/60 mb-2">معاينة مباشرة (قبل وبعد التحسين)</p>
             <div className="relative w-full overflow-hidden rounded-xl border border-white/20 bg-black aspect-video">
               <Image
                 src={originalPreviewUrl}
@@ -232,7 +232,7 @@ export default function MediaLab({ onToast }) {
           disabled={!imageFile || imageLoading}
           className="mt-4 px-4 py-2 rounded-lg border border-indigo-400/30 bg-indigo-500/20 disabled:opacity-50"
         >
-          {imageLoading ? 'جاري التحسين…' : 'تحسين ورفع الصورة'}
+          {imageLoading ? 'جاري المعالجة…' : 'تحسين الصورة ورفعها'}
         </button>
 
         {imageResult && (
@@ -244,7 +244,7 @@ export default function MediaLab({ onToast }) {
               </a>
             </p>
             <p>
-              الأصلي: {formatBytes(imageResult.originalSize)} · بعد التحسين: {formatBytes(imageResult.optimizedSize)}
+              الحجم الأصلي: {formatBytes(imageResult.originalSize)} · بعد التحسين: {formatBytes(imageResult.optimizedSize)}
             </p>
             {savingText && <p className="text-green-300">{savingText}</p>}
           </div>
@@ -252,7 +252,7 @@ export default function MediaLab({ onToast }) {
         {!imageResult && imageFile && (
           <div className="mt-4 text-sm text-white/70">
             <p>
-              حجم المعاينة بعد التحسين: {previewLoading ? 'جاري الحساب…' : formatBytes(optimizedPreviewSize)}
+              الحجم المتوقّع بعد التحسين: {previewLoading ? 'جاري الحساب…' : formatBytes(optimizedPreviewSize)}
             </p>
             {savingText && <p className="text-green-300">{savingText}</p>}
           </div>
@@ -260,8 +260,8 @@ export default function MediaLab({ onToast }) {
       </div>
 
       <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
-        <h3 className="text-lg font-semibold">رفع أو استخراج الصوت</h3>
-        <p className="text-sm text-white/60 mt-1">ارفع ملفاً صوتياً، أو فيديو لاستخراج رابط للصوت (حسب نوع الملف).</p>
+        <h3 className="text-lg font-semibold">رفع الصوت أو استخراجه</h3>
+        <p className="text-sm text-white/60 mt-1">ارفع ملفاً صوتياً، أو فيديو لاستخراج المسار الصوتي منه تلقائياً.</p>
 
         <input
           type="file"
@@ -275,7 +275,7 @@ export default function MediaLab({ onToast }) {
           disabled={!audioFile || audioLoading}
           className="mt-4 px-4 py-2 rounded-lg border border-purple-400/30 bg-purple-500/20 disabled:opacity-50"
         >
-          {audioLoading ? 'جاري الرفع…' : 'رفع أو استخراج الصوت'}
+          {audioLoading ? 'جاري الرفع…' : 'رفع الملف أو استخراج الصوت'}
         </button>
 
         {audioResult && (
@@ -286,7 +286,7 @@ export default function MediaLab({ onToast }) {
                 فتح الصوت
               </a>
             </p>
-            {audioResult.fromVideo ? <p className="text-green-300">تم استخراج الصوت من ملف الفيديو.</p> : null}
+            {audioResult.fromVideo ? <p className="text-green-300">تم استخراج المسار الصوتي من ملف الفيديو.</p> : null}
           </div>
         )}
       </div>

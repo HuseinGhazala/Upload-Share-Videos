@@ -32,7 +32,7 @@ export async function POST(request) {
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json({ ok: false, error: 'بيانات الطلب غير صالحة' }, { status: 400 });
+    return NextResponse.json({ ok: false, error: 'بيانات الطلب غير صالحة.' }, { status: 400 });
   }
 
   const fullName = normalize(body.fullName);
@@ -41,16 +41,16 @@ export async function POST(request) {
   const origin = normalize(body.origin);
 
   if (!email || !password) {
-    return NextResponse.json({ ok: false, error: 'أدخل البريد الإلكتروني وكلمة المرور' }, { status: 400 });
+    return NextResponse.json({ ok: false, error: 'يرجى إدخال البريد الإلكتروني وكلمة المرور.' }, { status: 400 });
   }
 
   if (password.length < 6) {
-    return NextResponse.json({ ok: false, error: 'كلمة المرور يجب أن تكون 6 أحرف على الأقل' }, { status: 400 });
+    return NextResponse.json({ ok: false, error: 'يجب ألّا تقل كلمة المرور عن ٦ أحرف.' }, { status: 400 });
   }
 
   const supabase = getSupabaseServerClient();
   if (!supabase) {
-    return NextResponse.json({ ok: false, error: 'إعدادات الخادم غير مكتملة' }, { status: 500 });
+    return NextResponse.json({ ok: false, error: 'إعدادات الخادم غير مكتملة، يرجى المحاولة لاحقاً.' }, { status: 500 });
   }
 
   const callbackOrigin = origin || new URL(request.url).origin;
@@ -64,7 +64,7 @@ export async function POST(request) {
   });
 
   if (error) {
-    return NextResponse.json({ ok: false, error: 'تعذر إنشاء الحساب. تحقق من البيانات وحاول مرة أخرى' }, { status: 400 });
+    return NextResponse.json({ ok: false, error: 'تعذّر إنشاء الحساب. يرجى مراجعة البيانات والمحاولة مرة أخرى.' }, { status: 400 });
   }
 
   return NextResponse.json({ ok: true });

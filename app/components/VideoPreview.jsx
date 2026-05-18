@@ -33,7 +33,7 @@ export default function VideoPreview({ file }) {
           <p className="text-xs text-white/50 mt-0.5">{sizeMB} ميجابايت</p>
         </div>
         <span className="text-xs px-2 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-          معاينة
+          معاينة قبل الرفع
         </span>
       </div>
     </div>

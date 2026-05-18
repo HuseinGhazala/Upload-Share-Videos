@@ -5,8 +5,8 @@ import { planLabelAr } from '@/app/lib/plans';
 
 function statusLabel(s) {
   if (s === 'pending') return { text: 'قيد المراجعة', className: 'text-amber-200' };
-  if (s === 'approved') return { text: 'مقبول', className: 'text-emerald-300' };
-  if (s === 'rejected') return { text: 'مرفوض', className: 'text-red-300' };
+  if (s === 'approved') return { text: 'تمت الموافقة', className: 'text-emerald-300' };
+  if (s === 'rejected') return { text: 'تم الرفض', className: 'text-red-300' };
   return { text: s, className: 'text-white/70' };
 }
 
@@ -26,7 +26,7 @@ export default function PaymentQueue() {
       if (!res.ok) throw new Error(data.error || `خطأ ${res.status}`);
       setRows(data.submissions ?? []);
     } catch (e) {
-      setError(e.message || 'تعذر التحميل');
+      setError(e.message || 'تعذّر تحميل البيانات.');
       setRows([]);
     } finally {
       setLoading(false);
@@ -41,7 +41,7 @@ export default function PaymentQueue() {
     const res = await fetch(`/api/admin/payment-submissions/${id}/receipt-url`);
     const data = await res.json().catch(() => ({}));
     if (!res.ok || !data.url) {
-      alert(data.error || 'تعذر فتح الملف');
+      alert(data.error || 'تعذّر فتح الإيصال.');
       return;
     }
     window.open(data.url, '_blank', 'noopener,noreferrer');
@@ -64,14 +64,14 @@ export default function PaymentQueue() {
       if (!res.ok) throw new Error(data.error || `خطأ ${res.status}`);
       await load();
     } catch (e) {
-      setError(e.message || 'فشلت العملية');
+      setError(e.message || 'لم تكتمل العملية، يرجى المحاولة مرة أخرى.');
     } finally {
       setActionId(null);
     }
   };
 
   if (loading && rows.length === 0) {
-    return <p className="text-center text-white/50 py-12">جاري التحميل…</p>;
+    return <p className="text-center text-white/50 py-12">جاري تحميل الطلبات…</p>;
   }
 
   return (
@@ -88,24 +88,24 @@ export default function PaymentQueue() {
           onClick={() => load()}
           className="text-sm text-emerald-400 hover:text-emerald-300"
         >
-          تحديث القائمة
+          تحديث القائمة الآن
         </button>
       </div>
 
       {rows.length === 0 ? (
-        <p className="text-center text-white/45 py-12">لا توجد طلبات حتى الآن.</p>
+        <p className="text-center text-white/45 py-12">لا توجد طلبات تأكيد دفع حتى الآن.</p>
       ) : (
         <div className="overflow-x-auto rounded-2xl border border-white/10 bg-white/[0.03]">
           <table className="w-full text-sm text-right min-w-[900px]">
             <thead>
               <tr className="border-b border-white/10 text-white/55">
-                <th className="p-3 font-semibold">التاريخ</th>
+                <th className="p-3 font-semibold">تاريخ الإرسال</th>
                 <th className="p-3 font-semibold">المستخدم</th>
                 <th className="p-3 font-semibold">الباقة</th>
                 <th className="p-3 font-semibold">الحالة</th>
                 <th className="p-3 font-semibold">ملاحظة العميل</th>
-                <th className="p-3 font-semibold w-[1%]">إيصال</th>
-                <th className="p-3 font-semibold">قرار</th>
+                <th className="p-3 font-semibold w-[1%]">الإيصال</th>
+                <th className="p-3 font-semibold">القرار</th>
               </tr>
             </thead>
             <tbody>
@@ -136,7 +136,7 @@ export default function PaymentQueue() {
                     <td className="p-3 text-white/65 align-top max-w-[200px] text-xs break-words">
                       {row.user_note || '—'}
                       {row.status === 'rejected' && row.admin_note && (
-                        <span className="block mt-1 text-red-200/80">إدارة: {row.admin_note}</span>
+                        <span className="block mt-1 text-red-200/80">ملاحظة الإدارة: {row.admin_note}</span>
                       )}
                     </td>
                     <td className="p-3 align-top">
@@ -145,7 +145,7 @@ export default function PaymentQueue() {
                         onClick={() => openReceipt(row.id)}
                         className="text-xs text-indigo-300 hover:text-indigo-200 underline"
                       >
-                        عرض {row.file_name ? `(${row.file_name})` : ''}
+                        عرض الإيصال {row.file_name ? `(${row.file_name})` : ''}
                       </button>
                     </td>
                     <td className="p-3 align-top">
@@ -157,7 +157,7 @@ export default function PaymentQueue() {
                             onClick={() => review(row.id, 'approve')}
                             className="rounded-lg bg-emerald-600/90 hover:bg-emerald-500 disabled:opacity-50 px-2 py-1.5 text-xs font-medium"
                           >
-                            {busy ? '…' : 'قبول وتفعيل'}
+                            {busy ? '…' : 'قبول وتفعيل الباقة'}
                           </button>
                           <input
                             type="text"
@@ -175,7 +175,7 @@ export default function PaymentQueue() {
                             onClick={() => review(row.id, 'reject')}
                             className="rounded-lg border border-red-500/40 bg-red-500/10 hover:bg-red-500/20 disabled:opacity-50 px-2 py-1.5 text-xs text-red-200"
                           >
-                            رفض
+                            رفض الطلب
                           </button>
                         </div>
                       ) : (

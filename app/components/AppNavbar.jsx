@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { motion } from 'framer-motion';
+import { FREE_PUBLIC_MODE } from '@/app/lib/plans';
 import { useAuth } from '@/app/providers/AuthProvider';
 
 export default function AppNavbar() {
@@ -48,41 +49,49 @@ export default function AppNavbar() {
         <Link href="/" className={itemClass('/')}>
           الرئيسية
         </Link>
-        <Link href="/pricing" className={itemClass('/pricing', true)}>
-          الباقات والأسعار
-        </Link>
-        <Link href="/admin/login" title="لوحة الإدارة (رمز الدخول)" className={itemClass('/admin/login')}>
-          لوحة الإدارة
-        </Link>
-        {loading ? (
-          <span className="text-white/40 px-4 py-2 text-sm">…</span>
-        ) : user ? (
-          <>
-            <Link href="/account" className={itemClass('/account')}>
-              حسابي
-              {quota?.planKey === 'unlimited'
-                ? ' · غير محدود'
-                : typeof quota?.creditsRemaining === 'number'
-                  ? ` · ${quota.creditsRemaining}`
-                  : ''}
-            </Link>
-            <button type="button" onClick={() => signOut()} className="btn-secondary px-4 py-2">
-              خروج
-            </button>
-            {!hasActivePlan ? (
-              <Link href="/pricing?from=navbar_no_plan" className="btn-primary px-4 py-2">
-                ابدأ باقتك
-              </Link>
-            ) : null}
-          </>
+        {FREE_PUBLIC_MODE ? (
+          <span className="rounded-full px-4 py-2 text-sm font-medium border bg-emerald-500/10 border-emerald-500/35 text-emerald-200">
+            ✨ مجاني للجميع
+          </span>
         ) : (
           <>
-            <Link href="/login" className={itemClass('/login')}>
-              تسجيل الدخول
+            <Link href="/pricing" className={itemClass('/pricing', true)}>
+              الأسعار والباقات
             </Link>
-            <Link href="/signup" className="btn-primary px-4 py-2">
-              حساب جديد
+            <Link href="/admin/login" title="لوحة الإدارة (دخول مخصّص)" className={itemClass('/admin/login')}>
+              لوحة الإدارة
             </Link>
+            {loading ? (
+              <span className="text-white/40 px-4 py-2 text-sm">…</span>
+            ) : user ? (
+              <>
+                <Link href="/account" className={itemClass('/account')}>
+                  حسابي
+                  {quota?.planKey === 'unlimited'
+                    ? ' · غير محدود'
+                    : typeof quota?.creditsRemaining === 'number'
+                      ? ` · ${quota.creditsRemaining}`
+                      : ''}
+                </Link>
+                <button type="button" onClick={() => signOut()} className="btn-secondary px-4 py-2">
+                  تسجيل الخروج
+                </button>
+                {!hasActivePlan ? (
+                  <Link href="/pricing?from=navbar_no_plan" className="btn-primary px-4 py-2">
+                    اشترك الآن
+                  </Link>
+                ) : null}
+              </>
+            ) : (
+              <>
+                <Link href="/login" className={itemClass('/login')}>
+                  تسجيل الدخول
+                </Link>
+                <Link href="/signup" className="btn-primary px-4 py-2">
+                  إنشاء حساب
+                </Link>
+              </>
+            )}
           </>
         )}
       </div>

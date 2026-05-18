@@ -19,26 +19,26 @@ export default function AdminNav({ current }) {
   return (
     <nav className="flex flex-wrap justify-center items-center gap-2 mb-8" dir="rtl">
       <Link href="/admin" className={base + (current === 'home' ? active : idle)}>
-        لوحة الإدارة
+        الرئيسية
       </Link>
       <Link
         href="/admin/subscribers"
         className={base + (current === 'subscribers' ? active : idle)}
       >
-        المشتركون والباقات
+        المشتركون
       </Link>
       <Link href="/admin/billing" className={base + (current === 'billing' ? active : idle)}>
-        تفعيل باقة بعد الدفع
+        تفعيل الباقات
       </Link>
       <Link href="/admin/payments" className={base + (current === 'payments' ? active : idle)}>
-        طلبات إيصال الدفع
+        طلبات الدفع
       </Link>
       <button
         type="button"
         onClick={logout}
         className={`${base}${idle}`}
       >
-        خروج من الإدارة
+        تسجيل الخروج
       </button>
     </nav>
   );

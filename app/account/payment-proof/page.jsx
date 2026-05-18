@@ -37,7 +37,7 @@ export default function PaymentProofPage() {
     setMessage(null);
     setError(null);
     if (!file) {
-      setError('اختر ملف الإيصال (PDF أو صورة).');
+      setError('يرجى اختيار ملف الإيصال (PDF أو صورة).');
       return;
     }
     setSubmitting(true);
@@ -56,12 +56,12 @@ export default function PaymentProofPage() {
         hasNote: Boolean(userNote.trim()),
         ...getAttributionFromLocation(),
       });
-      setMessage(data.message || 'تم الإرسال بنجاح.');
+      setMessage(data.message || 'تم استلام طلبك بنجاح.');
       setFile(null);
       setUserNote('');
       if (e.target?.reset) e.target.reset();
     } catch (err) {
-      setError(err.message || 'فشل الإرسال');
+      setError(err.message || 'تعذّر إرسال الطلب. حاول مرة أخرى.');
     } finally {
       setSubmitting(false);
     }
@@ -72,7 +72,7 @@ export default function PaymentProofPage() {
       <main className="min-h-screen text-white">
         <div className="section-wrap max-w-3xl py-10 sm:py-14 text-center space-y-4">
           <AppNavbar />
-          <p className="text-white/60">سجّل الدخول لإرسال إيصال الدفع.</p>
+          <p className="text-white/60">يلزم تسجيل الدخول لإرسال إيصال الدفع.</p>
           <Link href="/login" className="inline-block text-indigo-400 hover:text-indigo-300">
             تسجيل الدخول →
           </Link>
@@ -91,23 +91,23 @@ export default function PaymentProofPage() {
           transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
           className="glass-panel p-8 sm:p-10"
         >
-          <h1 className="text-2xl font-bold mb-2">تأكيد الدفع بإيصال</h1>
+          <h1 className="text-2xl font-bold mb-2">تأكيد الدفع</h1>
           <p className="text-sm text-white/55 mb-8 leading-relaxed">
-            بعد التحويل، ارفع صورة أو ملف PDF للإيصال. سيظهر الطلب في لوحة الإدارة للمراجعة وتفعيل الباقة عند
-            الموافقة.
+            بعد إتمام التحويل، أرفق صورة الإيصال أو ملف PDF. سيُحال الطلب إلى فريقنا للمراجعة، ويُفعَّل
+            حسابك فور الموافقة.
           </p>
           <div className="mb-7 grid gap-2 sm:grid-cols-3 text-xs">
             <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3">
-              <p className="font-semibold text-emerald-200">1) اختر الباقة</p>
-              <p className="text-emerald-100/80 mt-1">حدد الباقة التي حوّلت قيمتها.</p>
+              <p className="font-semibold text-emerald-200">١. حدّد الباقة</p>
+              <p className="text-emerald-100/80 mt-1">اختر الباقة التي قمت بدفع قيمتها.</p>
             </div>
             <div className="rounded-lg border border-indigo-500/30 bg-indigo-500/10 p-3">
-              <p className="font-semibold text-indigo-200">2) ارفع الإيصال</p>
-              <p className="text-indigo-100/80 mt-1">صورة واضحة أو PDF حتى 5MB.</p>
+              <p className="font-semibold text-indigo-200">٢. أرفق الإيصال</p>
+              <p className="text-indigo-100/80 mt-1">صورة واضحة أو PDF بحجم لا يتجاوز ٥ ميجابايت.</p>
             </div>
             <div className="rounded-lg border border-white/20 bg-white/5 p-3">
-              <p className="font-semibold text-white/90">3) تفعيل الباقة</p>
-              <p className="text-white/60 mt-1">نراجع الطلب ونفعّل خلال ساعات العمل.</p>
+              <p className="font-semibold text-white/90">٣. التفعيل</p>
+              <p className="text-white/60 mt-1">نراجع الطلب ونفعّل الباقة خلال ساعات العمل.</p>
             </div>
           </div>
 
@@ -116,7 +116,7 @@ export default function PaymentProofPage() {
           ) : (
             <form onSubmit={onSubmit} className="space-y-5">
               <div>
-                <label className="block text-sm text-white/70 mb-1">الباقة التي دفعتها</label>
+                <label className="block text-sm text-white/70 mb-1">الباقة المدفوعة</label>
                 <select
                   value={planKey}
                   onChange={(e) => setPlanKey(e.target.value)}
@@ -128,7 +128,7 @@ export default function PaymentProofPage() {
                     </option>
                   ))}
                 </select>
-                <p className="text-xs text-white/40 mt-1">المعروض: {planLabelAr(planKey)}</p>
+                <p className="text-xs text-white/40 mt-1">المختار: {planLabelAr(planKey)}</p>
               </div>
 
               <div>
@@ -140,18 +140,18 @@ export default function PaymentProofPage() {
                   onChange={(e) => setFile(e.target.files?.[0] ?? null)}
                   className="w-full text-sm text-white/80 file:mr-4 file:rounded-lg file:border-0 file:bg-emerald-600 file:px-4 file:py-2 file:text-white"
                 />
-                <p className="text-xs text-white/40 mt-1">PDF أو صورة — حتى ٥ ميجابايت</p>
-                <p className="text-xs text-white/35 mt-1">نصيحة: صورة التحويل الواضحة تسرّع المراجعة.</p>
+                <p className="text-xs text-white/40 mt-1">PDF أو صورة — بحد أقصى ٥ ميجابايت</p>
+                <p className="text-xs text-white/35 mt-1">نصيحة: الإيصال الواضح يُسرّع عملية المراجعة.</p>
               </div>
 
               <div>
-                <label className="block text-sm text-white/70 mb-1">ملاحظة (اختياري)</label>
+                <label className="block text-sm text-white/70 mb-1">ملاحظات إضافية (اختياري)</label>
                 <textarea
                   value={userNote}
                   onChange={(e) => setUserNote(e.target.value)}
                   rows={3}
                   className="w-full rounded-xl bg-white/10 border border-white/20 px-4 py-3 text-white outline-none focus:border-emerald-500 text-sm placeholder:text-white/30"
-                  placeholder="مثلاً: رقم العملية، تاريخ التحويل…"
+                  placeholder="مثال: رقم العملية، تاريخ التحويل، أو أي تفاصيل تساعدنا…"
                 />
               </div>
 
@@ -167,7 +167,7 @@ export default function PaymentProofPage() {
               )}
               {message && (
                 <p className="text-xs text-white/60 bg-white/5 border border-white/10 rounded-lg px-3 py-2">
-                  الخطوة التالية: تابع حالة طلبك من لوحة الحساب، وسيصلك التفعيل فور المراجعة.
+                  ما الخطوة التالية؟ يمكنك متابعة حالة طلبك من صفحة الحساب، وسيُفعَّل اشتراكك فور إتمام المراجعة.
                 </p>
               )}
 
@@ -176,14 +176,14 @@ export default function PaymentProofPage() {
                 disabled={submitting}
                 className="btn-primary w-full disabled:opacity-50"
               >
-                {submitting ? 'جاري الإرسال…' : 'إرسال الإيصال'}
+                {submitting ? 'جاري الإرسال…' : 'إرسال الطلب'}
               </button>
             </form>
           )}
 
           <p className="mt-8 text-center">
             <Link href="/account" className="text-sm text-indigo-300 hover:text-indigo-200">
-              ← العودة لحسابي
+              ← العودة إلى حسابي
             </Link>
           </p>
         </motion.div>

@@ -1,6 +1,7 @@
 'use client';
 import Image from 'next/image';
 import { useState } from 'react';
+import { FREE_PUBLIC_MODE } from '@/app/lib/plans';
 
 function formatDate(iso) {
   return new Date(iso).toLocaleString('ar-SA', {
@@ -18,7 +19,7 @@ function formatSize(bytes) {
 function visibilityAr(v) {
   if (v === 'public') return 'عام';
   if (v === 'private') return 'خاص';
-  if (v === 'unlisted') return 'مخفي';
+  if (v === 'unlisted') return 'غير مُدرَج';
   return v;
 }
 
@@ -47,7 +48,7 @@ export default function VideoGallery({
 
   if (hideWhenEmpty) return null;
 
-  const title = listScope === 'mine' ? 'فيديوهاتي' : 'الفيديوهات';
+  const title = listScope === 'mine' ? 'فيديوهاتي' : 'مكتبة الفيديوهات';
 
   return (
     <section className="mt-10">
@@ -59,7 +60,7 @@ export default function VideoGallery({
             {pagination?.total ?? videos.length}
           </span>
         </h2>
-        {sessionUser && onListScopeChange && (
+        {!FREE_PUBLIC_MODE && sessionUser && onListScopeChange && (
           <div className="flex rounded-xl border border-white/15 p-1 bg-white/5 shrink-0">
             <button
               type="button"
@@ -68,7 +69,7 @@ export default function VideoGallery({
                 listScope !== 'mine' ? 'bg-indigo-600 text-white' : 'text-white/70 hover:text-white'
               }`}
             >
-              المتاحة للجميع
+              العامة
             </button>
             <button
               type="button"
@@ -84,7 +85,7 @@ export default function VideoGallery({
       </div>
 
       {!videos.length && !loading && listScope === 'mine' ? (
-        <p className="text-white/45 text-sm mb-4">لم ترفع أي فيديو بعد.</p>
+        <p className="text-white/45 text-sm mb-4">لم تقم برفع أي فيديو حتى الآن.</p>
       ) : null}
       {loading && <p className="text-sm text-white/50 mb-3">جاري تحميل الفيديوهات…</p>}
       <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
@@ -146,7 +147,7 @@ export default function VideoGallery({
                   {video.source === 'github'
                     ? '🐙 GitHub'
                     : video.source === 'local'
-                      ? '💾 تخزين محلي'
+                      ? '💾 تخزين محلّي'
                       : `📦 ${video.source}`}
                 </span>
               )}
@@ -171,7 +172,7 @@ export default function VideoGallery({
                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 010 5.656l-3 3a4 4 0 11-5.656-5.656l1.5-1.5m6.328-1.172a4 4 0 010-5.656l3-3a4 4 0 115.656 5.656l-1.5 1.5" />
                   </svg>
-                  نسخ الرابط المباشر
+                  رابط مباشر
                 </button>
                 <button
                   onClick={() => onCopy(`${video.url}${video.visibility === 'public' ? '' : `?accessToken=${video.accessToken}`}`)}
@@ -180,7 +181,7 @@ export default function VideoGallery({
                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                   </svg>
-                  نسخ رابط المشاهدة
+                  رابط المشاهدة
                 </button>
               </div>
             </div>
@@ -197,7 +198,7 @@ export default function VideoGallery({
             السابق
           </button>
           <span className="px-3 py-2 text-sm text-white/70 tabular-nums">
-            صفحة {pagination.page} من {pagination.totalPages}
+            الصفحة {pagination.page} من {pagination.totalPages}
           </span>
           <button
             onClick={() => onPageChange(Math.min(pagination.totalPages, pagination.page + 1))}

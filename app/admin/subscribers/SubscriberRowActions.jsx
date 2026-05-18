@@ -6,8 +6,8 @@ import { PLAN_KEYS } from '@/app/lib/plans';
 
 const ACTIVATE_OPTIONS = [
   { value: PLAN_KEYS.SINGLE, label: 'فيديو واحد' },
-  { value: PLAN_KEYS.TRIPLE, label: '٣ فيديوهات' },
-  { value: PLAN_KEYS.UNLIMITED, label: 'غير محدود' },
+  { value: PLAN_KEYS.TRIPLE, label: 'ثلاثة فيديوهات' },
+  { value: PLAN_KEYS.UNLIMITED, label: 'غير محدودة' },
 ];
 
 export default function SubscriberRowActions({ userId, hasActivePlan }) {
@@ -33,7 +33,7 @@ export default function SubscriberRowActions({ userId, hasActivePlan }) {
       }
       router.refresh();
     } catch (e) {
-      setError(e.message || 'فشل الطلب');
+      setError(e.message || 'تعذّر تنفيذ الطلب.');
     } finally {
       setLoading(false);
     }
@@ -66,10 +66,10 @@ export default function SubscriberRowActions({ userId, hasActivePlan }) {
           type="button"
           disabled={loading || !hasActivePlan}
           onClick={() => run('cancel')}
-          title={!hasActivePlan ? 'لا يوجد اشتراك/Bاقة نشطة' : undefined}
+          title={!hasActivePlan ? 'لا توجد باقة نشطة لإلغائها' : undefined}
           className="rounded-lg border border-red-500/50 bg-red-500/15 hover:bg-red-500/25 disabled:opacity-40 px-2.5 py-1.5 text-xs text-red-200 transition"
         >
-          إلغاء
+          إلغاء الباقة
         </button>
       </div>
       {error && <p className="text-[11px] text-red-400 leading-snug text-right">{error}</p>}

@@ -1,5 +1,15 @@
 /** باقات الرفع بالريال السعودي — لا يوجد مجاني؛ التفعيل من لوحة التحكم أو واجهة `/api/billing/activate-plan`. */
 
+/**
+ * وضع مجاني للجميع: يسمح بالرفع دون تسجيل دخول أو باقة.
+ * عطّله بإعداد NEXT_PUBLIC_FREE_PUBLIC_MODE=false لاحقاً عند التحوّل إلى نموذج مدفوع.
+ */
+const RAW_FREE_MODE = (process.env.NEXT_PUBLIC_FREE_PUBLIC_MODE ?? 'true').trim().toLowerCase();
+export const FREE_PUBLIC_MODE = RAW_FREE_MODE !== 'false' && RAW_FREE_MODE !== '0';
+
+/** معرّف ضيف ثابت يُستخدم للرفع المجهول في الوضع المجاني. */
+export const GUEST_USER_ID = 'guest';
+
 /** حجم أقصى لكل فيديو (جميع الباقات). */
 export const MAX_VIDEO_BYTES_PER_UPLOAD = 50 * 1024 * 1024;
 
@@ -17,21 +27,21 @@ export const UPLOAD_PACKAGES = [
     title: 'فيديو واحد',
     priceSar: 10,
     credits: 1,
-    description: 'مثالية لتجربة سريعة أو محتوى واحد مهم',
+    description: 'مناسبة لتجربة المنصّة أو لرفع محتوى واحد مهم.',
   },
   {
     key: PLAN_KEYS.TRIPLE,
     title: 'ثلاثة فيديوهات',
     priceSar: 25,
     credits: 3,
-    description: 'مناسبة لسلسلة قصيرة أو حملات بسيطة',
+    description: 'مناسبة لسلسلة محتوى قصيرة أو حملة تسويقية بسيطة.',
   },
   {
     key: PLAN_KEYS.UNLIMITED,
-    title: 'غير محدود',
+    title: 'باقة غير محدودة',
     priceSar: 50,
     credits: null,
-    description: 'للمبدعين والفرق المحتاجين رفعاً مستمراً داخل المملكة',
+    description: 'الخيار الأمثل لصنّاع المحتوى وفرق العمل التي تحتاج إلى رفع مستمر.',
   },
 ];
 
@@ -40,6 +50,7 @@ export const UPLOAD_PACKAGES = [
  * @returns {boolean}
  */
 export function hasUploadQuota(profile) {
+  if (FREE_PUBLIC_MODE) return true;
   if (!profile) return false;
   const plan = profile.plan_key ?? PLAN_KEYS.NONE;
   if (plan === PLAN_KEYS.UNLIMITED) return true;
@@ -67,7 +78,7 @@ export function maxUploadBytesForProfile(_profile) {
 export function planLabelAr(planKey) {
   const k = planKey ?? PLAN_KEYS.NONE;
   if (k === PLAN_KEYS.SINGLE) return 'باقة فيديو واحد';
-  if (k === PLAN_KEYS.TRIPLE) return 'باقة 3 فيديوهات';
+  if (k === PLAN_KEYS.TRIPLE) return 'باقة ثلاثة فيديوهات';
   if (k === PLAN_KEYS.UNLIMITED) return 'باقة غير محدودة';
-  return 'بدون باقة نشطة';
+  return 'لا توجد باقة نشطة';
 }

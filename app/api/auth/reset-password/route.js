@@ -32,25 +32,25 @@ export async function POST(request) {
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json({ ok: false, error: 'بيانات الطلب غير صالحة' }, { status: 400 });
+    return NextResponse.json({ ok: false, error: 'بيانات الطلب غير صالحة.' }, { status: 400 });
   }
 
   const password = normalize(body.password);
 
   if (!password) {
-    return NextResponse.json({ ok: false, error: 'أدخل كلمة المرور الجديدة' }, { status: 400 });
+    return NextResponse.json({ ok: false, error: 'يرجى إدخال كلمة المرور الجديدة.' }, { status: 400 });
   }
 
   if (password.length < 6) {
     return NextResponse.json(
-      { ok: false, error: 'كلمة المرور يجب أن تكون 6 أحرف على الأقل' },
+      { ok: false, error: 'يجب ألّا تقل كلمة المرور عن ٦ أحرف.' },
       { status: 400 }
     );
   }
 
   const supabase = getSupabaseServerClient();
   if (!supabase) {
-    return NextResponse.json({ ok: false, error: 'إعدادات الخادم غير مكتملة' }, { status: 500 });
+    return NextResponse.json({ ok: false, error: 'إعدادات الخادم غير مكتملة، يرجى المحاولة لاحقاً.' }, { status: 500 });
   }
 
   const {
@@ -71,7 +71,7 @@ export async function POST(request) {
 
   if (error) {
     return NextResponse.json(
-      { ok: false, error: 'تعذر تحديث كلمة المرور. اطلب رابطاً جديداً وحاول مرة أخرى.' },
+      { ok: false, error: 'تعذّر تحديث كلمة المرور. يرجى طلب رابط جديد والمحاولة مجدداً.' },
       { status: 400 }
     );
   }

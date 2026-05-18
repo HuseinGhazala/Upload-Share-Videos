@@ -3,7 +3,7 @@ import { useState, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import VideoPreview from './VideoPreview';
 import ProgressBar from './ProgressBar';
-import { MAX_VIDEO_BYTES_PER_UPLOAD } from '@/app/lib/plans';
+import { FREE_PUBLIC_MODE, MAX_VIDEO_BYTES_PER_UPLOAD } from '@/app/lib/plans';
 
 const ALLOWED_TYPES = ['video/mp4', 'video/webm', 'video/quicktime'];
 
@@ -17,6 +17,8 @@ export default function VideoUpload({
   canUpload = false,
   maxUploadBytes = MAX_VIDEO_BYTES_PER_UPLOAD,
 }) {
+  const effectiveCanUpload = FREE_PUBLIC_MODE ? true : canUpload;
+  const effectiveIsLoggedIn = FREE_PUBLIC_MODE ? true : isLoggedIn;
   const [dragOver, setDragOver] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [fileError, setFileError] = useState('');
@@ -29,11 +31,11 @@ export default function VideoUpload({
   const validateFile = useCallback(
     (file) => {
       if (!ALLOWED_TYPES.includes(file.type)) {
-        return 'نوع الملف غير مدعوم. استخدم mp4 أو webm أو mov.';
+        return 'صيغة الملف غير مدعومة. الصيغ المتاحة: MP4 أو WebM أو MOV.';
       }
       if (file.size > maxUploadBytes) {
         const mb = Math.max(1, Math.round(maxUploadBytes / (1024 * 1024)));
-        return `الملف أكبر من حد خطتك (${mb} ميجابايت).`;
+        return `حجم الملف يتجاوز الحد المسموح به في باقتك (${mb} ميجابايت).`;
       }
       return null;
     },
@@ -42,7 +44,7 @@ export default function VideoUpload({
 
   const handleFile = useCallback(
     async (file) => {
-      if (!canUpload) return;
+      if (!effectiveCanUpload) return;
       const err = validateFile(file);
       if (err) {
         setFileError(err);
@@ -58,22 +60,22 @@ export default function VideoUpload({
         setSelectedFile(null);
         onToast('تم رفع الفيديو بنجاح', 'success');
       } catch (e) {
-        onToast((e.message ? `تعذر الرفع: ${e.message}` : 'تعذر رفع الفيديو'), 'error');
+        onToast(e.message ? `تعذّر الرفع: ${e.message}` : 'تعذّر رفع الفيديو، حاول مرة أخرى.', 'error');
       }
     },
-    [onUpload, onToast, visibility, canUpload, validateFile]
+    [onUpload, onToast, visibility, effectiveCanUpload, validateFile]
   );
 
   const onDrop = (e) => {
     e.preventDefault();
     setDragOver(false);
-    if (!canUpload) return;
+    if (!effectiveCanUpload) return;
     const file = e.dataTransfer.files[0];
     if (file) handleFile(file);
   };
 
   const onInputChange = (e) => {
-    if (!canUpload) {
+    if (!effectiveCanUpload) {
       e.target.value = '';
       return;
     }
@@ -86,36 +88,41 @@ export default function VideoUpload({
 
   return (
     <div className="w-full">
-      {!isLoggedIn && (
+      {!FREE_PUBLIC_MODE && !isLoggedIn && (
         <p className="mb-4 text-center text-amber-200/90 text-sm">
           <Link href="/login" className="font-semibold underline hover:text-amber-100">
             سجّل الدخول
           </Link>{' '}
-          ثم اشترِ إحدى الباقات لرفع الفيديوهات.
+          ثم اختر إحدى الباقات لتفعيل رفع الفيديوهات.
         </p>
       )}
-      {isLoggedIn && !canUpload && (
+      {!FREE_PUBLIC_MODE && isLoggedIn && !canUpload && (
         <p className="mb-4 text-center text-amber-200/90 text-sm">
-          لا يوجد رصيد رفع.{' '}
+          لا يوجد رصيد متاح للرفع.{' '}
           <Link href="/pricing" className="font-semibold underline hover:text-amber-100">
-            اشترِ باقة
+            اختر باقة مناسبة
           </Link>{' '}
-          (١٠ / ٢٥ / ٥٠ ريال).
+          (١٠ / ٢٥ / ٥٠ ر.س).
+        </p>
+      )}
+      {FREE_PUBLIC_MODE && (
+        <p className="mb-4 text-center text-emerald-200/85 text-sm">
+          الرفع متاح للجميع مجاناً وبدون تسجيل دخول. حد الحجم: {maxMbRounded} ميجابايت لكل فيديو.
         </p>
       )}
       <div
         onDragOver={(e) => {
-          if (!canUpload) return;
+          if (!effectiveCanUpload) return;
           e.preventDefault();
           setDragOver(true);
         }}
         onDragLeave={() => setDragOver(false)}
         onDrop={onDrop}
-        onClick={() => canUpload && !loading && inputRef.current?.click()}
+        onClick={() => effectiveCanUpload && !loading && inputRef.current?.click()}
         className={`relative rounded-2xl border-2 border-dashed p-10 text-center transition-all duration-300
           ${dragOver ? 'border-indigo-400 bg-indigo-500/10 scale-[1.01]' : 'border-white/20 bg-white/5 hover:border-indigo-500/50 hover:bg-white/10'}
           ${loading ? 'pointer-events-none opacity-70' : ''}
-          ${!canUpload ? 'cursor-not-allowed opacity-55 pointer-events-none' : 'cursor-pointer hover:bg-white/10'}
+          ${!effectiveCanUpload ? 'cursor-not-allowed opacity-55 pointer-events-none' : 'cursor-pointer hover:bg-white/10'}
         `}
       >
         <input
@@ -124,7 +131,7 @@ export default function VideoUpload({
           accept="video/mp4,video/webm,video/quicktime"
           className="hidden"
           onChange={onInputChange}
-          disabled={loading || !canUpload}
+          disabled={loading || !effectiveCanUpload}
         />
         <div className="flex flex-col items-center gap-3">
           <div className={`w-16 h-16 rounded-2xl flex items-center justify-center transition-all duration-300 ${dragOver ? 'bg-indigo-500/30 scale-110' : 'bg-white/10'}`}>
@@ -142,19 +149,19 @@ export default function VideoUpload({
           <div>
             <p className="text-white font-semibold text-lg">
               {loading
-                ? 'جاري الرفع…'
-                : !canUpload
-                  ? !isLoggedIn
-                    ? 'سجّل الدخول واشترِ باقة للرفع'
-                    : 'لا يوجد رصيد — اشترِ من الأسعار'
+                ? 'جاري رفع الفيديو…'
+                : !effectiveCanUpload
+                  ? !effectiveIsLoggedIn
+                    ? 'سجّل الدخول واختر باقة لبدء الرفع'
+                    : 'لا يوجد رصيد — اختر باقة من صفحة الأسعار'
                   : dragOver
-                    ? 'أفلت الملف هنا'
-                    : 'اسحب الفيديو وأفلته هنا'}
+                    ? 'أفلِت الملف هنا'
+                    : 'اسحب الفيديو وأفلِته هنا'}
             </p>
             <p className="text-white/40 text-sm mt-1">
               {loading
-                ? 'يرجى الانتظار'
-                : `أو انقر للاختيار — mp4 أو webm أو mov — حتى ${maxMbRounded} ميجابايت`}
+                ? 'يرجى الانتظار حتى يكتمل الرفع'
+                : `أو انقر للاختيار — MP4 أو WebM أو MOV، حتى ${maxMbRounded} ميجابايت`}
             </p>
           </div>
         </div>
@@ -163,21 +170,21 @@ export default function VideoUpload({
       {loading && <ProgressBar progress={progress} />}
 
       <div className="mt-4 flex items-center gap-3">
-        <label className="text-sm text-white/70">الظهور</label>
+        <label className="text-sm text-white/70">مستوى الظهور</label>
         <select
           value={visibility}
           onChange={(e) => setVisibility(e.target.value)}
-          disabled={loading || !canUpload}
+          disabled={loading || !effectiveCanUpload}
           className="rounded-lg bg-white/10 border border-white/20 px-3 py-2 text-sm text-white outline-none"
         >
           <option value="public" className="text-black">
-            عام — يظهر للجميع
+            عام — متاح للجميع
           </option>
           <option value="private" className="text-black">
-            خاص — برمز الدخول فقط
+            خاص — برمز وصول فقط
           </option>
           <option value="unlisted" className="text-black">
-            مخفي — من يملك الرابط فقط
+            غير مُدرَج — لمن يملك الرابط فقط
           </option>
         </select>
       </div>
@@ -195,11 +202,11 @@ export default function VideoUpload({
 
       {lastUploaded && (
         <div className="mt-4 px-4 py-3 rounded-xl bg-green-500/10 border border-green-500/20">
-          <p className="text-green-400 text-sm font-medium">اكتمل الرفع</p>
+          <p className="text-green-400 text-sm font-medium">اكتمل رفع الفيديو</p>
           <p className="text-white/50 text-xs mt-1 truncate">{lastUploaded.url}</p>
           {lastUploaded.visibility !== 'public' && (
             <p className="text-amber-200/90 text-xs mt-1">
-              رمز الوصول: {lastUploaded.accessToken}
+              رمز الوصول الخاص بك: {lastUploaded.accessToken}
             </p>
           )}
         </div>

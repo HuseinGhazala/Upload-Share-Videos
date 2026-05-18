@@ -1,5 +1,14 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com',
+        pathname: '/**',
+      },
+    ],
+  },
   /**
    * طبقة احتياطية: منع كاش المستندات على الاستضافات التي لا تمرّ كل الطلبات عبر middleware.
    * لا تُطبَّق على `/_next/static` (أسماء ملفات مشفّرة + immutable من Next).

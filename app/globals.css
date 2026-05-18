@@ -30,6 +30,89 @@ body {
   color: var(--text-primary);
 }
 
+/* Lenis smooth scroll setup */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+.lenis.lenis-scrolling iframe {
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html:not(.lenis) {
+    scroll-behavior: smooth;
+  }
+}
+
+/* AutoReveal — data-animate attribute driven scroll reveal */
+[data-animate] {
+  opacity: 0;
+  will-change: opacity, transform;
+  transition: opacity 0.75s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.75s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+[data-animate='fade-up'] {
+  transform: translate3d(0, 28px, 0);
+}
+
+[data-animate='fade-down'] {
+  transform: translate3d(0, -28px, 0);
+}
+
+[data-animate='fade-left'] {
+  transform: translate3d(28px, 0, 0);
+}
+
+[data-animate='fade-right'] {
+  transform: translate3d(-28px, 0, 0);
+}
+
+[data-animate='zoom-in'] {
+  transform: scale(0.94);
+}
+
+[data-animate='blur-in'] {
+  filter: blur(10px);
+  transform: translate3d(0, 18px, 0);
+  transition: opacity 0.85s ease, transform 0.85s ease, filter 0.85s ease;
+}
+
+[data-animate].is-revealed {
+  opacity: 1;
+  transform: none;
+  filter: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-animate] {
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+    transition: none !important;
+  }
+}
+
 ::selection {
   background: rgba(79, 124, 255, 0.35);
   color: #fff;

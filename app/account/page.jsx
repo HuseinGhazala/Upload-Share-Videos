@@ -27,7 +27,7 @@ export default function AccountPage() {
       <main className="min-h-screen text-white">
         <div className="section-wrap max-w-3xl py-10 sm:py-14 text-center space-y-4">
           <AppNavbar />
-          <p className="text-white/60">يجب تسجيل الدخول لعرض هذه الصفحة.</p>
+          <p className="text-white/60">يلزم تسجيل الدخول لعرض هذه الصفحة.</p>
           <Link href="/login" className="inline-block text-indigo-400 hover:text-indigo-300">
             تسجيل الدخول →
           </Link>
@@ -43,8 +43,8 @@ export default function AccountPage() {
     quota?.creditsRemaining === null
       ? 'غير محدود'
       : typeof quota?.creditsRemaining === 'number'
-        ? `${quota.creditsRemaining} فيديو متبقي`
-        : 'لا رصيد — اشترِ باقة';
+        ? `${quota.creditsRemaining} فيديو متبقٍّ`
+        : 'لا يوجد رصيد — اختر باقة';
 
   return (
     <main className="min-h-screen text-white">
@@ -63,19 +63,19 @@ export default function AccountPage() {
             <>
               <dl className="space-y-4 text-sm">
                 <div>
-                  <dt className="text-white/50">البريد</dt>
+                  <dt className="text-white/50">البريد الإلكتروني</dt>
                   <dd className="font-medium mt-1">{user?.email}</dd>
                 </div>
                 <div>
-                  <dt className="text-white/50">الباقة</dt>
+                  <dt className="text-white/50">الباقة الحالية</dt>
                   <dd className="font-medium mt-1">{quota?.planLabel ?? '—'}</dd>
                 </div>
                 <div>
-                  <dt className="text-white/50">رصيد الرفع</dt>
+                  <dt className="text-white/50">الرصيد المتاح</dt>
                   <dd className="font-medium mt-1">{creditsLine}</dd>
                 </div>
                 <div>
-                  <dt className="text-white/50">حد حجم كل فيديو</dt>
+                  <dt className="text-white/50">الحد الأقصى لحجم الفيديو</dt>
                   <dd className="font-medium mt-1">{maxMb} ميجابايت</dd>
                 </div>
               </dl>
@@ -84,20 +84,20 @@ export default function AccountPage() {
                   href="/account/payment-proof"
                   className="btn-primary px-5 py-2.5"
                 >
-                  تأكيد الدفع بإيصال
+                  إرسال إيصال الدفع
                 </Link>
                 <Link
                   href="/pricing"
                   className="btn-secondary px-5 py-2.5"
                 >
-                  الباقات والأسعار
+                  استعراض الباقات
                 </Link>
                 <button
                   type="button"
                   onClick={() => signOut()}
                   className="btn-secondary px-5 py-2.5"
                 >
-                  خروج
+                  تسجيل الخروج
                 </button>
               </div>
             </>

@@ -46,13 +46,13 @@ export default function SignupPage() {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        throw new Error(data.error || 'فشل إنشاء الحساب');
+        throw new Error(data.error || 'تعذّر إنشاء الحساب، حاول مرة أخرى.');
       }
       trackFunnelEvent('complete_signup', {
         plan: nextPlan || '',
         ...getAttributionFromLocation(),
       });
-      setMessage('تم إنشاء الحساب. افتح الرابط الذي أُرسل لبريدك إذا كان تأكيد البريد مفعّلاً.');
+      setMessage('تم إنشاء حسابك بنجاح. إذا كان تأكيد البريد مفعّلاً، يرجى فتح رسالة التفعيل المرسلة إلى بريدك.');
       const target = nextPlan
         ? `/pricing?from=signup_complete&plan=${encodeURIComponent(nextPlan)}`
         : '/pricing?from=signup_complete';
@@ -62,7 +62,7 @@ export default function SignupPage() {
       }, 900);
     } catch (err) {
       const raw = typeof err?.message === 'string' ? err.message : '';
-      setError(raw || 'فشل إنشاء الحساب');
+      setError(raw || 'تعذّر إنشاء الحساب، حاول مرة أخرى.');
     } finally {
       setLoading(false);
     }
@@ -79,20 +79,20 @@ export default function SignupPage() {
           className="glass-panel p-8 sm:p-10"
         >
           <h1 className="text-3xl font-bold text-center mb-2 bg-gradient-to-b from-white to-indigo-200 bg-clip-text text-transparent">
-            حساب جديد
+            إنشاء حساب جديد
           </h1>
           <p className="text-white/55 text-sm text-center mb-8">
-            التسجيل لإنشاء حساب فقط — الرفع يتطلّب شراء إحدى الباقات (١٠ / ٢٥ / ٥٠ ريال).
+            التسجيل مجاني. يبدأ الرفع بعد اختيار إحدى الباقات (١٠ / ٢٥ / ٥٠ ر.س).
           </p>
           {!isSupabaseBrowserConfigured() && (
             <p className="text-xs text-amber-200/90 bg-amber-500/15 border border-amber-400/25 rounded-xl px-3 py-3 mb-4 leading-relaxed whitespace-pre-wrap">
-              تنبيه: إعدادات Supabase الظاهرة للمتصفح تبدو غير جاهزة من نسخة البناء الحالية. يمكنك المتابعة بالمحاولة، وإن استمر الفشل راجع متغيرات
-              NEXT_PUBLIC ثم أعد النشر.
+              تنبيه: يبدو أن إعدادات الاتصال غير جاهزة في النسخة الحالية. يمكنك المحاولة، وإذا تكرّر الفشل
+              راجع متغيرات NEXT_PUBLIC ثم أعد نشر الموقع.
             </p>
           )}
           <form onSubmit={onSubmit} className="space-y-4">
             <div>
-              <label htmlFor="signup-name" className="block text-sm text-white/70 mb-1">الاسم</label>
+              <label htmlFor="signup-name" className="block text-sm text-white/70 mb-1">الاسم الكامل</label>
               <input
                 id="signup-name"
                 name="fullName"
@@ -145,11 +145,11 @@ export default function SignupPage() {
               disabled={loading}
               className="btn-primary w-full disabled:opacity-50"
             >
-              {loading ? 'جاري التسجيل…' : 'إنشاء الحساب'}
+              {loading ? 'جاري إنشاء الحساب…' : 'إنشاء الحساب'}
             </button>
           </form>
           <p className="text-center text-sm text-white/50 mt-6">
-            لديك حساب؟{' '}
+            لديك حساب بالفعل؟{' '}
             <Link href="/login" className="text-indigo-300 hover:text-indigo-200">
               تسجيل الدخول
             </Link>

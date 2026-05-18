@@ -32,14 +32,14 @@ export default function AdminLoginForm() {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setErr(data.error ?? 'فشل التحقق');
+        setErr(data.error ?? 'تعذّر التحقق من رمز الدخول.');
         setLoading(false);
         return;
       }
       router.push(next);
       router.refresh();
     } catch {
-      setErr('خطأ في الاتصال');
+      setErr('تعذّر الاتصال، يرجى المحاولة مرة أخرى.');
       setLoading(false);
     }
   }
@@ -49,12 +49,12 @@ export default function AdminLoginForm() {
       <div className="w-full max-w-sm">
         <p className="text-center mb-6">
           <Link href="/pricing" className="text-emerald-400 hover:text-emerald-300 text-sm">
-            ← العودة للأسعار
+            ← العودة إلى صفحة الأسعار
           </Link>
         </p>
         <h1 className="text-2xl font-bold text-center mb-2">لوحة الإدارة</h1>
         <p className="text-white/45 text-sm text-center mb-8 leading-relaxed">
-          أدخل رمز الدخول للمتابعة.
+          يرجى إدخال رمز الدخول الخاص بالإدارة للمتابعة.
         </p>
         <form
           onSubmit={onSubmit}
@@ -84,7 +84,7 @@ export default function AdminLoginForm() {
             disabled={loading}
             className="w-full rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 py-3 font-semibold text-white transition"
           >
-            {loading ? 'جاري الدخول…' : 'دخول'}
+            {loading ? 'جاري التحقق…' : 'الدخول إلى اللوحة'}
           </button>
         </form>
       </div>

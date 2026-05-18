@@ -45,7 +45,7 @@ function LoginForm() {
     e.preventDefault();
     setError('');
     if (CAPTCHA.provider && CAPTCHA.siteKey && !captchaToken) {
-      setError('أكمل اختبار التحقق الأمني أولاً.');
+      setError('يرجى إكمال خطوة التحقق الأمني قبل المتابعة.');
       return;
     }
     setLoading(true);
@@ -62,7 +62,7 @@ function LoginForm() {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        throw new Error(data.error || 'فشل تسجيل الدخول');
+        throw new Error(data.error || 'تعذّر تسجيل الدخول، حاول مرة أخرى.');
       }
       const meRes = await fetch('/api/me', { credentials: 'include' });
       const me = await meRes.json().catch(() => ({}));
@@ -80,7 +80,7 @@ function LoginForm() {
       router.refresh();
     } catch (err) {
       const raw = typeof err?.message === 'string' ? err.message : '';
-      setError(raw || 'فشل تسجيل الدخول');
+      setError(raw || 'تعذّر تسجيل الدخول، حاول مرة أخرى.');
     } finally {
       setLoading(false);
     }
@@ -103,15 +103,15 @@ function LoginForm() {
             تسجيل الدخول
           </h1>
           <p className="text-white/55 text-sm text-center mb-8">
-            ادخل بريدك وكلمة المرور للمتابعة.
+            أدخل بريدك الإلكتروني وكلمة المرور للوصول إلى حسابك.
           </p>
           <p className="text-center text-xs text-white/45 mb-5">
-            بعد تسجيل الدخول، سنوجّهك مباشرة للخطوة الأنسب لإكمال الاشتراك أو بدء الرفع.
+            سنوجّهك تلقائياً بعد الدخول إلى الخطوة المناسبة لإكمال اشتراكك أو بدء الرفع.
           </p>
           {!isSupabaseBrowserConfigured() && (
             <p className="text-xs text-amber-200/90 bg-amber-500/15 border border-amber-400/25 rounded-xl px-3 py-3 mb-4 leading-relaxed whitespace-pre-wrap">
-              تنبيه: إعدادات Supabase الظاهرة للمتصفح تبدو غير جاهزة من نسخة البناء الحالية. يمكنك المتابعة بالمحاولة، وإن استمر الفشل راجع متغيرات
-              NEXT_PUBLIC ثم أعد النشر.
+              تنبيه: يبدو أن إعدادات الاتصال غير جاهزة في النسخة الحالية. يمكنك المحاولة، وإذا تكرّر الفشل
+              راجع متغيرات NEXT_PUBLIC ثم أعد نشر الموقع.
             </p>
           )}
           <form onSubmit={onSubmit} className="space-y-4">
@@ -170,7 +170,7 @@ function LoginForm() {
             ) : null}
             {resetDone && (
               <p className="text-sm text-green-400 bg-green-500/10 border border-green-500/20 rounded-lg px-3 py-2">
-                تم تحديث كلمة المرور. يمكنك تسجيل الدخول الآن.
+                تم تحديث كلمة المرور بنجاح. يمكنك الآن تسجيل الدخول بكلمة المرور الجديدة.
               </p>
             )}
             {error && (
@@ -183,13 +183,13 @@ function LoginForm() {
               disabled={loading}
               className="btn-primary w-full disabled:opacity-50"
             >
-              {loading ? 'جاري الدخول…' : 'دخول'}
+              {loading ? 'جاري الدخول…' : 'تسجيل الدخول'}
             </button>
           </form>
           <p className="text-center text-sm text-white/50 mt-6">
-            ليس لديك حساب؟{' '}
+            ليس لديك حساب بعد؟{' '}
             <Link href="/signup" className="text-indigo-300 hover:text-indigo-200">
-              إنشاء حساب
+              أنشئ حساباً جديداً
             </Link>
           </p>
         </motion.div>
@@ -203,7 +203,7 @@ export default function LoginPage() {
     <Suspense
       fallback={
         <main className="min-h-screen bg-[#0a0a12] text-white flex items-center justify-center">
-          <p className="text-white/50">جاري التحميل…</p>
+          <p className="text-white/50">جاري تحميل الصفحة…</p>
         </main>
       }
     >

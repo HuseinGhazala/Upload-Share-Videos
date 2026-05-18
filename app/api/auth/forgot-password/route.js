@@ -34,7 +34,7 @@ export async function POST(request) {
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json({ ok: false, error: 'بيانات الطلب غير صالحة' }, { status: 400 });
+    return NextResponse.json({ ok: false, error: 'بيانات الطلب غير صالحة.' }, { status: 400 });
   }
 
   const email = normalize(body.email).toLowerCase();
@@ -43,20 +43,20 @@ export async function POST(request) {
   const ip = getClientIp(request);
 
   if (!email) {
-    return NextResponse.json({ ok: false, error: 'أدخل البريد الإلكتروني' }, { status: 400 });
+    return NextResponse.json({ ok: false, error: 'يرجى إدخال البريد الإلكتروني.' }, { status: 400 });
   }
 
   const captcha = await verifyCaptchaToken(captchaToken, ip);
   if (!captcha.ok) {
     return NextResponse.json(
-      { ok: false, error: 'فشل تحقق الأمان. أعد المحاولة.' },
+      { ok: false, error: 'لم يكتمل التحقق الأمني. يرجى المحاولة مرة أخرى.' },
       { status: 400 }
     );
   }
 
   const supabase = getSupabaseServerClient();
   if (!supabase) {
-    return NextResponse.json({ ok: false, error: 'إعدادات الخادم غير مكتملة' }, { status: 500 });
+    return NextResponse.json({ ok: false, error: 'إعدادات الخادم غير مكتملة، يرجى المحاولة لاحقاً.' }, { status: 500 });
   }
 
   const callbackOrigin = origin || new URL(request.url).origin;
@@ -68,6 +68,6 @@ export async function POST(request) {
   return NextResponse.json({
     ok: true,
     message:
-      'إذا كان البريد مسجّلاً لدينا، ستصلك رسالة تحتوي رابط إعادة تعيين كلمة المرور. تحقق من صندوق الوارد والرسائل غير المرغوب فيها.',
+      'إذا كان البريد مسجّلاً لدينا فستصلك رسالة تتضمّن رابط إعادة تعيين كلمة المرور خلال دقائق. لا تنسَ التحقق من مجلّد الرسائل غير المرغوب فيها.',
   });
 }
