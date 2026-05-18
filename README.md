@@ -1,4 +1,4 @@
-# 🎬 Video Upload App
+# 🎬 Video Upload App 
 
 A full-featured video upload application built with **Next.js 14 (App Router)** and **Tailwind CSS**, with **GitHub** storage (optional) and a **local** `/public/uploads` fallback.
 
