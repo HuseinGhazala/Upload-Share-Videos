@@ -60,7 +60,7 @@ function noStoreDocumentHeaders(res) {
   res.headers.set('Content-Security-Policy', buildCsp());
 }
 
-export async function middleware(request) {
+export async function proxy(request) {
   const { pathname } = request.nextUrl;
 
   if (pathname.startsWith('/uploads/')) {

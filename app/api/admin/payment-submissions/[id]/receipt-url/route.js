@@ -9,8 +9,9 @@ import {
 const BUCKET = 'payment-receipts';
 
 /** رابط موقّع مؤقت لعرض إيصال الدفع */
-export async function GET(_request, { params }) {
-  const cookie = cookies().get(ADMIN_SESSION_COOKIE_NAME)?.value;
+export async function GET(_request, props) {
+  const params = await props.params;
+  const cookie = (await cookies()).get(ADMIN_SESSION_COOKIE_NAME)?.value;
   if (!cookie || !(await verifyAdminSessionCookieValue(cookie))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }

@@ -10,7 +10,7 @@ import {
  * قائمة طلبات تأكيد الدفع (لوحة الإدارة).
  */
 export async function GET() {
-  const cookie = cookies().get(ADMIN_SESSION_COOKIE_NAME)?.value;
+  const cookie = (await cookies()).get(ADMIN_SESSION_COOKIE_NAME)?.value;
   if (!cookie || !(await verifyAdminSessionCookieValue(cookie))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }

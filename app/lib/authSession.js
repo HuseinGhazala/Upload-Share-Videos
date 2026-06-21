@@ -8,7 +8,7 @@ import {
 } from '@/app/lib/plans';
 
 export async function getOptionalAuthUser() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -34,7 +34,7 @@ function buildGuestContext() {
  * في الوضع المجاني العام، يُسمح بالرفع للضيوف بسياق مبسّط.
  */
 export async function getAuthenticatedUploadContext() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
     error: userError,
@@ -61,7 +61,7 @@ export async function getAuthenticatedUploadContext() {
 export async function consumeUploadCreditAfterSuccessfulSave() {
   if (FREE_PUBLIC_MODE) return { ok: true, skipped: true };
 
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data, error } = await supabase.rpc('consume_upload_credit');
 
   if (error) {

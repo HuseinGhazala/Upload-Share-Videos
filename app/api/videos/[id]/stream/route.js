@@ -6,7 +6,8 @@ import { getBrowserSessionIdFromCookies } from '../../../../lib/browserSession';
 import { getOptionalAuthUser } from '../../../../lib/authSession';
 import { canAccessVideo } from '../../../../lib/videoAccess';
 
-export async function GET(request, { params }) {
+export async function GET(request, props) {
+  const params = await props.params;
   const video = await getVideoById(params.id);
   if (!video) {
     return NextResponse.json({ success: false, error: 'Video not found.' }, { status: 404 });

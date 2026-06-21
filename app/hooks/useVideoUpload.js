@@ -201,7 +201,13 @@ export function useVideoUpload() {
 
   const trackView = useCallback(async (id, accessToken) => {
     const query = accessToken ? `?accessToken=${encodeURIComponent(accessToken)}` : '';
-    await fetch(`/api/videos/${id}/view${query}`, { method: 'POST', credentials: 'include' });
+    const res = await fetch(`/api/videos/${id}/view${query}`, { method: 'POST', credentials: 'include' });
+    const data = await res.json().catch(() => ({}));
+    if (data.success && typeof data.views === 'number') {
+      setUploadedVideos((prev) =>
+        prev.map((video) => (video.id === id ? { ...video, views: data.views } : video))
+      );
+    }
     fetchStats();
   }, [fetchStats]);
 

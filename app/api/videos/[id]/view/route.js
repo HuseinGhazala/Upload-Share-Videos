@@ -7,7 +7,8 @@ import { canAccessVideo } from '../../../../lib/videoAccess';
 
 const viewMemory = new Map();
 
-export async function POST(request, { params }) {
+export async function POST(request, props) {
+  const params = await props.params;
   const ip = getClientIp(request);
   const limited = rateLimit(`view:${ip}`, { max: 120, windowMs: 60_000 });
   if (!limited.allowed) {

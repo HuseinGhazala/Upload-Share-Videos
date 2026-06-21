@@ -17,7 +17,7 @@ const ACTIVATE_PLANS = new Set([PLAN_KEYS.SINGLE, PLAN_KEYS.TRIPLE, PLAN_KEYS.UN
  * POST JSON: { "userId": "<uuid>", "action": "activate" | "cancel", "planKey"?: "single" | "triple" | "unlimited" }
  */
 export async function POST(request) {
-  const cookie = cookies().get(ADMIN_SESSION_COOKIE_NAME)?.value;
+  const cookie = (await cookies()).get(ADMIN_SESSION_COOKIE_NAME)?.value;
   if (!cookie || !(await verifyAdminSessionCookieValue(cookie))) {
     return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
   }

@@ -24,8 +24,38 @@ function visibilityAr(v) {
   return v;
 }
 
-function getShareStreamUrl(video) {
-  return `${video.url}?accessToken=${video.accessToken}`;
+function getRawUrl(video) {
+  if (video.source === 'github' && video.public_id && video.ghOwner && video.ghRepo) {
+    const branch = video.ghBranch || 'main';
+    return `https://github.com/${video.ghOwner}/${video.ghRepo}/raw/refs/heads/${branch}/${video.public_id}`;
+  }
+  return video.rawUrl || video.sourceUrl || video.url;
+}
+
+function getWatchStreamUrl(video) {
+  return `${video.url}${video.visibility === 'public' ? '' : `?accessToken=${video.accessToken}`}`;
+}
+
+function getGithubRepoUrl(video) {
+  if (video.ghOwner && video.ghRepo) {
+    return `https://github.com/${video.ghOwner}/${video.ghRepo}`;
+  }
+  return null;
+}
+
+function getGithubFileUrl(video) {
+  if (video.source === 'github' && video.sourceUrl?.startsWith('http')) {
+    return video.sourceUrl;
+  }
+  return null;
+}
+
+function toAbsoluteUrl(url) {
+  if (!url || url.startsWith('http')) return url;
+  if (typeof window === 'undefined') return url;
+  const { protocol, hostname, port } = window.location;
+  const safeHost = hostname === '0.0.0.0' ? 'localhost' : hostname;
+  return `${protocol}//${safeHost}${port ? `:${port}` : ''}${url}`;
 }
 
 export default function VideoGallery({
@@ -88,12 +118,18 @@ export default function VideoGallery({
       <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {videos.map((video) => {
           const isImage = isImageMedia(video);
+          const watchUrl = toAbsoluteUrl(getWatchStreamUrl(video));
+          const githubRepoUrl = getGithubRepoUrl(video);
+          const githubFileUrl = getGithubFileUrl(video);
           return (
           <div
             key={video.id}
             className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur overflow-hidden hover:border-indigo-500/50 transition-all duration-300 group"
           >
             <div className={`relative bg-black ${isImage ? 'aspect-square' : 'aspect-video'}`}>
+              <div className="absolute top-2 start-2 z-10 rounded-full bg-black/70 backdrop-blur px-2.5 py-1 text-[11px] text-white/90 border border-white/15 tabular-nums">
+                👁 {new Intl.NumberFormat('ar-SA').format(video.views || 0)}
+              </div>
               {isImage ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
@@ -141,9 +177,38 @@ export default function VideoGallery({
             <div className="p-4">
               <p className="text-sm font-semibold text-white truncate">{video.name}</p>
               <p className="text-xs text-white/40 mt-0.5">{formatSize(video.size)} · {formatDate(video.uploadedAt)}</p>
-              <p className="text-xs text-white/50 mt-1">
-                👁 {new Intl.NumberFormat('ar-SA').format(video.views || 0)} مشاهدة
-              </p>
+
+              <div className="mt-2 rounded-lg border border-white/10 bg-black/25 px-2.5 py-2">
+                <p className="text-[10px] text-white/45 mb-1">رابط المشاهدة</p>
+                <p className="text-[11px] text-indigo-200/90 break-all leading-relaxed" dir="ltr">
+                  {watchUrl}
+                </p>
+              </div>
+
+              {githubFileUrl && (
+                <div className="mt-2 rounded-lg border border-gray-500/25 bg-gray-500/10 px-2.5 py-2">
+                  <p className="text-[10px] text-white/45 mb-1">رابط GitHub</p>
+                  <a
+                    href={githubFileUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[11px] text-gray-200 break-all leading-relaxed hover:text-white transition"
+                    dir="ltr"
+                  >
+                    {githubFileUrl}
+                  </a>
+                  {githubRepoUrl && (
+                    <a
+                      href={githubRepoUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-1.5 inline-flex items-center gap-1 text-[11px] text-gray-300 hover:text-white transition"
+                    >
+                      🐙 فتح المستودع
+                    </a>
+                  )}
+                </div>
+              )}
 
               {video.source && (
                 <span
@@ -171,13 +236,31 @@ export default function VideoGallery({
 
               <div className="flex flex-wrap gap-2 mt-3">
                 <button
-                  onClick={() => onCopy(getShareStreamUrl(video))}
+                  onClick={() => onCopy(video.rawUrl || video.url)}
                   className="flex-1 min-w-[100px] flex items-center justify-center gap-1.5 text-xs px-3 py-2 rounded-xl bg-indigo-500/20 hover:bg-indigo-500/40 text-indigo-300 border border-indigo-500/30 transition"
                 >
                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                   </svg>
-                  نسخ رابط المشاركة
+                  نسخ الرابط
+                </button>
+                <button
+                  onClick={() => onCopy(getRawUrl(video))}
+                  className="flex items-center justify-center gap-1.5 text-xs px-3 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/20 transition"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 010 5.656l-3 3a4 4 0 11-5.656-5.656l1.5-1.5m6.328-1.172a4 4 0 010-5.656l3-3a4 4 0 115.656 5.656l-1.5 1.5" />
+                  </svg>
+                  رابط مباشر
+                </button>
+                <button
+                  onClick={() => onCopy(getWatchStreamUrl(video))}
+                  className="flex items-center justify-center gap-1.5 text-xs px-3 py-2 rounded-xl bg-purple-500/10 hover:bg-purple-500/30 text-purple-300 border border-purple-500/20 transition"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                  رابط المشاهدة
                 </button>
               </div>
             </div>

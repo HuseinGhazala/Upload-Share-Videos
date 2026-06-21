@@ -10,8 +10,9 @@ import { updateProfilePaidPlan } from '@/app/lib/activatePaidPlan';
 /**
  * POST body: { decision: "approve" | "reject", adminNote?: string }
  */
-export async function POST(request, { params }) {
-  const cookie = cookies().get(ADMIN_SESSION_COOKIE_NAME)?.value;
+export async function POST(request, props) {
+  const params = await props.params;
+  const cookie = (await cookies()).get(ADMIN_SESSION_COOKIE_NAME)?.value;
   if (!cookie || !(await verifyAdminSessionCookieValue(cookie))) {
     return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
   }
