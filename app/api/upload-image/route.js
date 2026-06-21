@@ -1,11 +1,9 @@
 import { NextResponse } from 'next/server';
-import { mkdir, writeFile } from 'fs/promises';
-import path from 'path';
-import crypto from 'crypto';
 import { getClientIp, rateLimit } from '../../lib/rateLimit';
-
-const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
-const MAX_IMAGE_SIZE = 15 * 1024 * 1024;
+import { validateVideoPayload, persistVideoBuffer } from '../../lib/completeVideoUpload';
+import { getAuthenticatedUploadContext } from '../../lib/authSession';
+import { getBrowserSessionIdFromCookies } from '../../lib/browserSession';
+import { resolveMediaMimeType } from '../../lib/mediaTypes';
 
 export async function POST(request) {
   try {
@@ -15,48 +13,69 @@ export async function POST(request) {
       return NextResponse.json({ success: false, error: 'Too many image uploads.' }, { status: 429 });
     }
 
+    const { user, maxUploadBytes, uploadAllowed } = await getAuthenticatedUploadContext();
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: 'يجب تسجيل الدخول لرفع الصورة.' },
+        { status: 401 }
+      );
+    }
+    if (!uploadAllowed) {
+      return NextResponse.json(
+        { success: false, error: 'لا يوجد رصيد رفع. اشترِ باقة من صفحة الأسعار.' },
+        { status: 403 }
+      );
+    }
+
     const formData = await request.formData();
     const file = formData.get('image');
     if (!file) {
       return NextResponse.json({ success: false, error: 'No image provided.' }, { status: 400 });
     }
 
-    if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
-      return NextResponse.json(
-        { success: false, error: 'Invalid image type. Allowed: jpg, png, webp.' },
-        { status: 400 }
-      );
-    }
-
-    if (file.size > MAX_IMAGE_SIZE) {
-      return NextResponse.json({ success: false, error: 'Image too large. Max 15MB.' }, { status: 400 });
+    const mimeType = resolveMediaMimeType(file.name, file.type);
+    const check = validateVideoPayload(
+      { name: file.name, size: file.size, mimeType, visibility: 'public' },
+      maxUploadBytes
+    );
+    if (check.error) {
+      return NextResponse.json({ success: false, error: check.error }, { status: 400 });
     }
 
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
-    const extension = file.type.includes('png') ? 'png' : file.type.includes('webp') ? 'webp' : 'jpg';
+    const browserSessionId = await getBrowserSessionIdFromCookies();
 
-    const uploadsDir = path.join(process.cwd(), 'public', 'uploads', 'images');
-    await mkdir(uploadsDir, { recursive: true });
-    const filename = `image_${Date.now()}_${crypto.randomBytes(4).toString('hex')}.${extension}`;
-    const filePath = path.join(uploadsDir, filename);
-    await writeFile(filePath, buffer);
+    const saved = await persistVideoBuffer(buffer, {
+      name: file.name,
+      size: file.size,
+      mimeType: check.mimeType ?? mimeType,
+      visibility: 'public',
+      ownerId: user.id,
+      browserSessionId,
+      maxVideoBytes: maxUploadBytes,
+    });
 
     return NextResponse.json({
       success: true,
       item: {
-        id: crypto.randomUUID(),
+        id: saved.id,
         type: 'image',
-        source: 'local',
-        url: `/uploads/images/${filename}`,
-        public_id: filename,
-        name: file.name,
-        size: file.size,
+        mediaKind: saved.mediaKind,
+        source: saved.source,
+        url: saved.url,
+        rawUrl: saved.rawUrl,
+        accessToken: saved.accessToken,
+        name: saved.name,
+        size: saved.size,
       },
     });
   } catch (error) {
     console.error('Image upload error:', error);
-    return NextResponse.json({ success: false, error: 'Image upload failed.' }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: error.message || 'Image upload failed.' },
+      { status: 500 }
+    );
   }
 }
 

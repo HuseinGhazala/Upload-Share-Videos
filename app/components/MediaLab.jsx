@@ -28,7 +28,11 @@ async function compressImage(file, { maxWidth, quality, format }) {
   return new File([blob], `${file.name.replace(/\.[^/.]+$/, '')}.${ext}`, { type: mime });
 }
 
-export default function MediaLab({ onToast }) {
+function getShareStreamUrl(item) {
+  return `${item.url}?accessToken=${item.accessToken}`;
+}
+
+export default function MediaLab({ onToast, onCopy, onUploaded }) {
   const [imageFile, setImageFile] = useState(null);
   const [imageResult, setImageResult] = useState(null);
   const [audioResult, setAudioResult] = useState(null);
@@ -105,7 +109,11 @@ export default function MediaLab({ onToast }) {
       const formData = new FormData();
       formData.append('image', optimized);
 
-      const res = await fetch('/api/upload-image', { method: 'POST', body: formData });
+      const res = await fetch('/api/upload-image', {
+        method: 'POST',
+        credentials: 'include',
+        body: formData,
+      });
       const data = await res.json();
       if (!res.ok || !data.success) throw new Error(data.error || 'تعذّر رفع الصورة، حاول مرة أخرى.');
 
@@ -114,6 +122,7 @@ export default function MediaLab({ onToast }) {
         optimizedSize: optimized.size,
         originalSize: imageFile.size,
       });
+      onUploaded?.();
       onToast?.('تم تحسين الصورة ورفعها بنجاح', 'success');
     } catch (error) {
       onToast?.(`❌ ${error.message}`, 'error');
@@ -236,17 +245,43 @@ export default function MediaLab({ onToast }) {
         </button>
 
         {imageResult && (
-          <div className="mt-4 text-sm text-white/70">
+          <div className="mt-4 space-y-3 text-sm text-white/70">
+            <div className="rounded-xl overflow-hidden border border-white/10 bg-black max-h-52">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={imageResult.url}
+                alt={imageResult.name}
+                className="w-full max-h-52 object-contain"
+              />
+            </div>
             <p>
-              الرابط:{' '}
-              <a className="text-indigo-300 underline" href={imageResult.url} target="_blank" rel="noreferrer">
-                فتح الصورة
-              </a>
-            </p>
-            <p>
-              الحجم الأصلي: {formatBytes(imageResult.originalSize)} · بعد التحسين: {formatBytes(imageResult.optimizedSize)}
+              الحجم الأصلي: {formatBytes(imageResult.originalSize)} · بعد التحسين:{' '}
+              {formatBytes(imageResult.optimizedSize)}
             </p>
             {savingText && <p className="text-green-300">{savingText}</p>}
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => onCopy?.(imageResult.rawUrl || imageResult.url)}
+                className="flex-1 min-w-[100px] text-xs px-3 py-2 rounded-xl bg-indigo-500/20 hover:bg-indigo-500/40 text-indigo-300 border border-indigo-500/30 transition"
+              >
+                نسخ الرابط
+              </button>
+              <button
+                type="button"
+                onClick={() => onCopy?.(getShareStreamUrl(imageResult))}
+                className="text-xs px-3 py-2 rounded-xl bg-purple-500/10 hover:bg-purple-500/30 text-purple-300 border border-purple-500/20 transition"
+              >
+                رابط المشاهدة
+              </button>
+              <a
+                href={getShareStreamUrl(imageResult)}
+                download={imageResult.name}
+                className="text-xs px-3 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/20 transition"
+              >
+                تحميل
+              </a>
+            </div>
           </div>
         )}
         {!imageResult && imageFile && (

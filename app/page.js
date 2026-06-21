@@ -221,7 +221,7 @@ export default function HomePage() {
             ضغط الصور واستخراج الصوت من الفيديو ضمن نفس الواجهة، بسرعة وبضغطة واحدة.
           </p>
           {showMediaLab ? (
-            <MediaLab onToast={showToast} />
+            <MediaLab onToast={showToast} onCopy={handleCopy} onUploaded={() => setPage(1)} />
           ) : (
             <button
               type="button"
