@@ -91,6 +91,7 @@ export async function POST(request) {
       ownerId: manifest.ownerId,
       browserSessionId: manifest.browserSessionId ?? browserSessionId,
       maxVideoBytes: manifest.maxUploadBytes,
+      linkTtl: manifest.linkTtl || 'never',
     });
 
     const consumed = await consumeUploadCreditAfterSuccessfulSave();

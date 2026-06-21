@@ -38,6 +38,7 @@ export async function POST(request) {
     const formData = await request.formData();
     const file = formData.get('video');
     const visibilityInput = formData.get('visibility')?.toString() || 'public';
+    const linkTtl = formData.get('linkTtl')?.toString() || 'never';
 
     if (!file) {
       return NextResponse.json({ success: false, error: 'No file provided' }, { status: 400 });
@@ -68,6 +69,7 @@ export async function POST(request) {
       ownerId: user.id,
       browserSessionId,
       maxVideoBytes: maxUploadBytes,
+      linkTtl,
     });
 
     const consumed = await consumeUploadCreditAfterSuccessfulSave();

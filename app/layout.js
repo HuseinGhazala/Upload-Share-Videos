@@ -11,7 +11,13 @@ const notoArabic = Noto_Sans_Arabic({
 export const metadata = {
   title: 'منصّة رفع الفيديو — تجربة سعودية احترافية',
   description:
-    'ارفع فيديوهاتك وشاركها بسهولة عبر منصّة سعودية بأسعار واضحة بالريال، وحسابات محميّة وتفعيل سريع في نفس اليوم.',
+    'ارفع فيديوهاتك وصورك وشاركها بسهولة — روابط آمنة، QR Code، ورفع من الموبايل.',
+  manifest: '/manifest.webmanifest',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'رفع فيديو',
+  },
   icons: {
     icon: '/icon.svg',
     shortcut: '/icon.svg',

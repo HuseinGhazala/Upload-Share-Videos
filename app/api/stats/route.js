@@ -3,7 +3,8 @@ import { getAllVideos } from '../../lib/videoStore';
 import { getClientIp, rateLimit } from '../../lib/rateLimit';
 import { getOptionalAuthUser } from '../../lib/authSession';
 import { getBrowserSessionIdFromCookies } from '../../lib/browserSession';
-import { filterVideosBySession } from '../../lib/videoAccess';
+import { filterVideosBySession, countByMediaKind } from '../../lib/videoAccess';
+import { isImageMedia } from '../../lib/mediaTypes';
 
 export async function GET(request) {
   const ip = getClientIp(request);
@@ -31,6 +32,7 @@ export async function GET(request) {
     mine,
   });
 
+  const { video: totalVideoFiles, image: totalImageFiles } = countByMediaKind(videos);
   const totalVideos = videos.length;
   const totalViews = videos.reduce((sum, item) => sum + (item.views || 0), 0);
   const totalSizeMb = videos.reduce((sum, item) => sum + (item.size || 0), 0) / (1024 * 1024);
@@ -43,13 +45,28 @@ export async function GET(request) {
     { public: 0, private: 0, unlisted: 0 }
   );
 
+  const recentViews = videos
+    .filter((v) => v.lastViewedAt)
+    .sort((a, b) => new Date(b.lastViewedAt) - new Date(a.lastViewedAt))
+    .slice(0, 5)
+    .map((v) => ({
+      id: v.id,
+      name: v.name,
+      mediaKind: isImageMedia(v) ? 'image' : 'video',
+      views: v.views || 0,
+      lastViewedAt: v.lastViewedAt,
+    }));
+
   return NextResponse.json({
     success: true,
     stats: {
       totalVideos,
+      totalVideoFiles,
+      totalImageFiles,
       totalViews,
       totalSizeMb: Number(totalSizeMb.toFixed(2)),
       byVisibility,
+      recentViews,
     },
   });
 }

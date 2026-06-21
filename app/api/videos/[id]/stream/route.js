@@ -5,6 +5,7 @@ import { getVideoById } from '../../../../lib/videoStore';
 import { getBrowserSessionIdFromCookies } from '../../../../lib/browserSession';
 import { getOptionalAuthUser } from '../../../../lib/authSession';
 import { canAccessVideo } from '../../../../lib/videoAccess';
+import { isShareAccessExpired } from '../../../../lib/linkTtl';
 
 export async function GET(request, props) {
   const params = await props.params;
@@ -19,6 +20,9 @@ export async function GET(request, props) {
   const user = await getOptionalAuthUser();
 
   if (!canAccessVideo(video, { accessToken, browserSessionId, userId: user?.id })) {
+    if (isShareAccessExpired(video) && accessToken === video.accessToken) {
+      return NextResponse.json({ success: false, error: 'انتهت صلاحية رابط المشاركة.' }, { status: 410 });
+    }
     return NextResponse.json({ success: false, error: 'Unauthorized access.' }, { status: 403 });
   }
 

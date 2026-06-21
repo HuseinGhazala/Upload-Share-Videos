@@ -5,6 +5,7 @@ import { addVideo } from './videoStore';
 import { isGitHubUploadConfigured, uploadVideoToGitHub } from './githubUpload';
 import { visibilitySchema } from './validation';
 import { FREE_MAX_VIDEO_BYTES } from './subscription';
+import { computeExpiresAt } from './linkTtl';
 import {
   ALLOWED_VIDEO_TYPES,
   getMediaKind,
@@ -41,7 +42,7 @@ export function validateVideoPayload({ name, size, mimeType, visibility }, maxVi
  */
 export async function persistVideoBuffer(
   buffer,
-  { name, size, mimeType, visibility, ownerId, browserSessionId, maxVideoBytes }
+  { name, size, mimeType, visibility, ownerId, browserSessionId, maxVideoBytes, linkTtl = 'never' }
 ) {
   const check = validateVideoPayload({ name, size, mimeType, visibility }, maxVideoBytes ?? MAX_VIDEO_SIZE);
   if (check.error) {
@@ -69,6 +70,10 @@ export async function persistVideoBuffer(
     thumbnailUrl: '',
     public_id: '',
     accessToken: crypto.randomBytes(16).toString('hex'),
+    linkTtl: linkTtl || 'never',
+    expiresAt: computeExpiresAt(linkTtl),
+    lastViewedAt: null,
+    viewLog: [],
   };
 
   if (isGitHubUploadConfigured()) {

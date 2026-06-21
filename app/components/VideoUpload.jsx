@@ -3,8 +3,14 @@ import { useState, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import VideoPreview from './VideoPreview';
 import ProgressBar from './ProgressBar';
+import ShareTools from './ShareTools';
 import { FREE_PUBLIC_MODE, MAX_VIDEO_BYTES_PER_UPLOAD } from '@/app/lib/plans';
 import { MEDIA_ACCEPT, MEDIA_FORMATS_AR, isAllowedMediaFile } from '@/app/lib/mediaTypes';
+import { LINK_TTL_OPTIONS } from '@/app/lib/linkTtl';
+import { applyWatermarkToFile, supportsWatermark } from '@/app/lib/watermark';
+import { compressVideoFile } from '@/app/lib/videoCompress';
+
+const MAX_BATCH_FILES = 10;
 
 export default function VideoUpload({
   onUpload,
@@ -12,6 +18,7 @@ export default function VideoUpload({
   progress,
   error,
   onToast,
+  onCopy,
   isLoggedIn = false,
   canUpload = false,
   maxUploadBytes = MAX_VIDEO_BYTES_PER_UPLOAD,
@@ -22,8 +29,15 @@ export default function VideoUpload({
   const [selectedFile, setSelectedFile] = useState(null);
   const [fileError, setFileError] = useState('');
   const [lastUploaded, setLastUploaded] = useState(null);
+  const [batchResults, setBatchResults] = useState([]);
   const [visibility, setVisibility] = useState('public');
+  const [linkTtl, setLinkTtl] = useState('never');
+  const [watermarkText, setWatermarkText] = useState('');
+  const [compressVideo, setCompressVideo] = useState(false);
+  const [batchIndex, setBatchIndex] = useState(0);
+  const [batchTotal, setBatchTotal] = useState(0);
   const inputRef = useRef(null);
+  const cameraRef = useRef(null);
 
   const maxMbRounded = Math.max(1, Math.round(maxUploadBytes / (1024 * 1024)));
 
@@ -34,11 +48,25 @@ export default function VideoUpload({
       }
       if (file.size > maxUploadBytes) {
         const mb = Math.max(1, Math.round(maxUploadBytes / (1024 * 1024)));
-        return `حجم الملف يتجاوز الحد المسموح به في باقتك (${mb} ميجابايت).`;
+        return `حجم الملف يتجاوز الحد المسموح (${mb} ميجابايت).`;
       }
       return null;
     },
     [maxUploadBytes]
+  );
+
+  const prepareFile = useCallback(
+    async (file) => {
+      let prepared = file;
+      if (compressVideo && file.type.startsWith('video/')) {
+        prepared = await compressVideoFile(file);
+      }
+      if (watermarkText.trim() && supportsWatermark(prepared)) {
+        prepared = await applyWatermarkToFile(prepared, { text: watermarkText });
+      }
+      return prepared;
+    },
+    [compressVideo, watermarkText]
   );
 
   const handleFile = useCallback(
@@ -52,25 +80,80 @@ export default function VideoUpload({
       setFileError('');
       setSelectedFile(file);
       setLastUploaded(null);
+      setBatchResults([]);
 
       try {
-        const result = await onUpload(file, visibility);
+        const prepared = await prepareFile(file);
+        const result = await onUpload(prepared, visibility, linkTtl);
         setLastUploaded(result);
         setSelectedFile(null);
-        onToast(file.type.startsWith('image/') ? 'تم رفع الصورة بنجاح' : 'تم رفع الفيديو بنجاح', 'success');
+        onToast(
+          file.type.startsWith('image/') ? 'تم رفع الصورة بنجاح' : 'تم رفع الفيديو بنجاح',
+          'success'
+        );
+        return result;
       } catch (e) {
         onToast(e.message ? `تعذّر الرفع: ${e.message}` : 'تعذّر رفع الملف، حاول مرة أخرى.', 'error');
+        throw e;
       }
     },
-    [onUpload, onToast, visibility, effectiveCanUpload, validateFile]
+    [onUpload, onToast, visibility, linkTtl, effectiveCanUpload, validateFile, prepareFile]
+  );
+
+  const handleFiles = useCallback(
+    async (fileList) => {
+      if (!effectiveCanUpload) return;
+      const files = Array.from(fileList || []).slice(0, MAX_BATCH_FILES);
+      if (!files.length) return;
+
+      if (files.length > MAX_BATCH_FILES) {
+        onToast(`تم اختيار ${files.length} ملف — سيتم رفع أول ${MAX_BATCH_FILES} فقط.`, 'success');
+      }
+
+      setFileError('');
+      setLastUploaded(null);
+      setBatchResults([]);
+      setBatchTotal(files.length);
+      setBatchIndex(0);
+
+      const results = [];
+      for (let i = 0; i < files.length; i++) {
+        setBatchIndex(i + 1);
+        const file = files[i];
+        const err = validateFile(file);
+        if (err) {
+          onToast(`${file.name}: ${err}`, 'error');
+          continue;
+        }
+        try {
+          const prepared = await prepareFile(file);
+          const result = await onUpload(prepared, visibility, linkTtl);
+          results.push(result);
+        } catch (e) {
+          onToast(`${file.name}: ${e.message || 'فشل الرفع'}`, 'error');
+        }
+      }
+
+      setBatchTotal(0);
+      setBatchIndex(0);
+      setSelectedFile(null);
+
+      if (results.length) {
+        setBatchResults(results);
+        setLastUploaded(results[results.length - 1]);
+        onToast(`اكتمل رفع ${results.length} من ${files.length} ملف`, 'success');
+      }
+    },
+    [effectiveCanUpload, validateFile, prepareFile, onUpload, visibility, linkTtl, onToast]
   );
 
   const onDrop = (e) => {
     e.preventDefault();
     setDragOver(false);
-    if (!effectiveCanUpload) return;
-    const file = e.dataTransfer.files[0];
-    if (file) handleFile(file);
+    if (!effectiveCanUpload || loading) return;
+    const files = e.dataTransfer.files;
+    if (files.length > 1) handleFiles(files);
+    else if (files[0]) handleFile(files[0]);
   };
 
   const onInputChange = (e) => {
@@ -78,12 +161,24 @@ export default function VideoUpload({
       e.target.value = '';
       return;
     }
-    const file = e.target.files[0];
+    const files = e.target.files;
+    if (files?.length > 1) handleFiles(files);
+    else if (files?.[0]) handleFile(files[0]);
+    e.target.value = '';
+  };
+
+  const onCameraChange = (e) => {
+    if (!effectiveCanUpload) {
+      e.target.value = '';
+      return;
+    }
+    const file = e.target.files?.[0];
     if (file) handleFile(file);
     e.target.value = '';
   };
 
   const displayError = fileError || error;
+  const batchLabel = batchTotal > 0 ? ` (${batchIndex}/${batchTotal})` : '';
 
   return (
     <div className="w-full">
@@ -106,9 +201,10 @@ export default function VideoUpload({
       )}
       {FREE_PUBLIC_MODE && (
         <p className="mb-4 text-center text-emerald-200/85 text-sm">
-          الرفع متاح للجميع مجاناً وبدون تسجيل دخول. حد الحجم: {maxMbRounded} ميجابايت لكل ملف.
+          الرفع متاح للجميع مجاناً. حتى {maxMbRounded} ميجابايت — رفع حتى {MAX_BATCH_FILES} ملفات دفعة واحدة.
         </p>
       )}
+
       <div
         onDragOver={(e) => {
           if (!effectiveCanUpload) return;
@@ -128,12 +224,15 @@ export default function VideoUpload({
           ref={inputRef}
           type="file"
           accept={MEDIA_ACCEPT}
+          multiple
           className="hidden"
           onChange={onInputChange}
           disabled={loading || !effectiveCanUpload}
         />
         <div className="flex flex-col items-center gap-3">
-          <div className={`w-16 h-16 rounded-2xl flex items-center justify-center transition-all duration-300 ${dragOver ? 'bg-indigo-500/30 scale-110' : 'bg-white/10'}`}>
+          <div
+            className={`w-16 h-16 rounded-2xl flex items-center justify-center transition-all duration-300 ${dragOver ? 'bg-indigo-500/30 scale-110' : 'bg-white/10'}`}
+          >
             {loading ? (
               <svg className="w-8 h-8 text-indigo-400 animate-spin" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
@@ -141,21 +240,26 @@ export default function VideoUpload({
               </svg>
             ) : (
               <svg className="w-8 h-8 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                />
               </svg>
             )}
           </div>
           <div>
             <p className="text-white font-semibold text-lg">
               {loading
-                ? 'جاري رفع الملف…'
+                ? `جاري الرفع${batchLabel}…`
                 : !effectiveCanUpload
                   ? !effectiveIsLoggedIn
                     ? 'سجّل الدخول واختر باقة لبدء الرفع'
                     : 'لا يوجد رصيد — اختر باقة من صفحة الأسعار'
                   : dragOver
-                    ? 'أفلِت الملف هنا'
-                    : 'اسحب فيديو أو صورة وأفلِته هنا'}
+                    ? 'أفلِت الملفات هنا'
+                    : 'اسحب ملفات (حتى 10) وأفلِتها هنا'}
             </p>
             <p className="text-white/40 text-sm mt-1">
               {loading
@@ -166,32 +270,100 @@ export default function VideoUpload({
         </div>
       </div>
 
+      <div className="mt-3 flex flex-wrap gap-2 justify-center">
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            cameraRef.current?.click();
+          }}
+          disabled={loading || !effectiveCanUpload}
+          className="text-xs px-4 py-2 rounded-xl bg-cyan-500/15 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/25 transition disabled:opacity-40"
+        >
+          📷 التقاط من الكاميرا
+        </button>
+        <input
+          ref={cameraRef}
+          type="file"
+          accept="image/*,video/*"
+          capture="environment"
+          className="hidden"
+          onChange={onCameraChange}
+          disabled={loading || !effectiveCanUpload}
+        />
+      </div>
+
       {loading && <ProgressBar progress={progress} />}
 
-      <div className="mt-4 flex items-center gap-3">
-        <label className="text-sm text-white/70">مستوى الظهور</label>
-        <select
-          value={visibility}
-          onChange={(e) => setVisibility(e.target.value)}
-          disabled={loading || !effectiveCanUpload}
-          className="rounded-lg bg-white/10 border border-white/20 px-3 py-2 text-sm text-white outline-none"
-        >
-          <option value="public" className="text-black">
-            عام — متاح للجميع
-          </option>
-          <option value="private" className="text-black">
-            خاص — برمز وصول فقط
-          </option>
-          <option value="unlisted" className="text-black">
-            غير مُدرَج — لمن يملك الرابط فقط
-          </option>
-        </select>
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        <div className="flex items-center gap-3">
+          <label className="text-sm text-white/70 shrink-0">مستوى الظهور</label>
+          <select
+            value={visibility}
+            onChange={(e) => setVisibility(e.target.value)}
+            disabled={loading || !effectiveCanUpload}
+            className="flex-1 rounded-lg bg-white/10 border border-white/20 px-3 py-2 text-sm text-white outline-none"
+          >
+            <option value="public" className="text-black">
+              عام — متاح للجميع
+            </option>
+            <option value="private" className="text-black">
+              خاص — برمز وصول فقط
+            </option>
+            <option value="unlisted" className="text-black">
+              غير مُدرَج — لمن يملك الرابط فقط
+            </option>
+          </select>
+        </div>
+        <div className="flex items-center gap-3">
+          <label className="text-sm text-white/70 shrink-0">انتهاء الرابط</label>
+          <select
+            value={linkTtl}
+            onChange={(e) => setLinkTtl(e.target.value)}
+            disabled={loading || !effectiveCanUpload}
+            className="flex-1 rounded-lg bg-white/10 border border-white/20 px-3 py-2 text-sm text-white outline-none"
+          >
+            {LINK_TTL_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value} className="text-black">
+                {opt.labelAr}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+        <div>
+          <label className="text-sm text-white/70 block mb-1">علامة مائية (اختياري — للصور)</label>
+          <input
+            type="text"
+            value={watermarkText}
+            onChange={(e) => setWatermarkText(e.target.value)}
+            placeholder="مثال: اسم المحل أو البراند"
+            disabled={loading || !effectiveCanUpload}
+            className="w-full rounded-lg bg-white/10 border border-white/20 px-3 py-2 text-sm text-white placeholder:text-white/30 outline-none"
+          />
+        </div>
+        <label className="flex items-center gap-2 text-sm text-white/70 cursor-pointer mt-6 sm:mt-0 sm:items-end sm:pb-2">
+          <input
+            type="checkbox"
+            checked={compressVideo}
+            onChange={(e) => setCompressVideo(e.target.checked)}
+            disabled={loading || !effectiveCanUpload}
+            className="rounded"
+          />
+          ضغط الفيديو قبل الرفع (يوفّر بيانات الموبايل)
+        </label>
       </div>
 
       {displayError && (
         <div className="mt-3 flex items-center gap-2 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
           <svg className="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+            <path
+              fillRule="evenodd"
+              d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+              clipRule="evenodd"
+            />
           </svg>
           {displayError}
         </div>
@@ -202,16 +374,13 @@ export default function VideoUpload({
       {lastUploaded && (
         <div className="mt-4 px-4 py-3 rounded-xl bg-green-500/10 border border-green-500/20">
           <p className="text-green-400 text-sm font-medium">
-            {lastUploaded.mediaKind === 'image' || lastUploaded.mimeType?.startsWith('image/')
-              ? 'اكتمل رفع الصورة'
-              : 'اكتمل رفع الفيديو'}
+            {batchResults.length > 1
+              ? `اكتمل رفع ${batchResults.length} ملفات`
+              : lastUploaded.mediaKind === 'image' || lastUploaded.mimeType?.startsWith('image/')
+                ? 'اكتمل رفع الصورة'
+                : 'اكتمل رفع الفيديو'}
           </p>
-          <p className="text-white/50 text-xs mt-1 truncate">{lastUploaded.url}</p>
-          {lastUploaded.visibility !== 'public' && (
-            <p className="text-amber-200/90 text-xs mt-1">
-              رمز الوصول الخاص بك: {lastUploaded.accessToken}
-            </p>
-          )}
+          <ShareTools item={lastUploaded} onCopy={onCopy} />
         </div>
       )}
     </div>

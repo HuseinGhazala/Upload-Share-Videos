@@ -46,6 +46,7 @@ export async function POST(request) {
     const size = Number(body.size);
     const mimeType = body.mimeType?.toString() || '';
     const visibility = body.visibility?.toString() || 'public';
+    const linkTtl = body.linkTtl?.toString() || 'never';
 
     const check = validateVideoPayload(
       { name: fileName, size, mimeType, visibility },
@@ -78,6 +79,7 @@ export async function POST(request) {
       size,
       mimeType,
       visibility,
+      linkTtl,
       ownerId: user.id,
       browserSessionId,
       maxUploadBytes,

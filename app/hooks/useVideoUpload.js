@@ -20,8 +20,7 @@ function messageForUploadFailure(xhr) {
   return `خطأ من الخادم (${xhr.status})`;
 }
 
-/** Many shared hosts return 503 on one large POST; small chunk requests usually succeed. */
-async function uploadChunked(file, visibility, setProgress) {
+async function uploadChunked(file, visibility, linkTtl, setProgress) {
   const startRes = await fetch('/api/upload/chunked/start', {
     method: 'POST',
     credentials: 'include',
@@ -31,6 +30,7 @@ async function uploadChunked(file, visibility, setProgress) {
       size: file.size,
       mimeType: file.type,
       visibility,
+      linkTtl,
     }),
   });
   const start = await startRes.json().catch(() => ({}));
@@ -78,11 +78,12 @@ async function uploadChunked(file, visibility, setProgress) {
   return done.video;
 }
 
-function uploadViaServer(file, visibility, setProgress) {
+function uploadViaServer(file, visibility, linkTtl, setProgress) {
   return new Promise((resolve, reject) => {
     const formData = new FormData();
     formData.append('video', file);
     formData.append('visibility', visibility);
+    formData.append('linkTtl', linkTtl);
 
     const xhr = new XMLHttpRequest();
 
@@ -133,28 +134,35 @@ export function useVideoUpload() {
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState({ totalPages: 1, total: 0, hasNext: false, hasPrev: false });
   const [listScope, setListScope] = useState('public');
+  const [activeMediaTab, setActiveMediaTab] = useState('videos');
+  const [tabCounts, setTabCounts] = useState({ video: 0, image: 0 });
 
   const fetchVideos = useCallback(
-    async (targetPage = 1) => {
+    async (targetPage = 1, mediaTab = activeMediaTab) => {
       setLoadingList(true);
       setError(null);
       try {
         const mineParam = listScope === 'mine' ? '&mine=1' : '';
-        const res = await fetch(`/api/videos?page=${targetPage}&limit=6${mineParam}`, {
-          credentials: 'include',
-        });
+        const mediaKind = mediaTab === 'images' ? 'image' : 'video';
+        const res = await fetch(
+          `/api/videos?page=${targetPage}&limit=6&mediaKind=${mediaKind}${mineParam}`,
+          { credentials: 'include' }
+        );
         const data = await res.json();
-        if (!res.ok || !data.success) throw new Error(data.error || 'تعذر تحميل قائمة الفيديوهات');
+        if (!res.ok || !data.success) throw new Error(data.error || 'تعذر تحميل قائمة الملفات');
         setUploadedVideos(data.items);
         setPagination(data.pagination);
         setPage(data.pagination.page);
+        if (data.counts) {
+          setTabCounts({ video: data.counts.video ?? 0, image: data.counts.image ?? 0 });
+        }
       } catch (err) {
         setError(err.message);
       } finally {
         setLoadingList(false);
       }
     },
-    [listScope]
+    [listScope, activeMediaTab]
   );
 
   const fetchStats = useCallback(async () => {
@@ -164,18 +172,24 @@ export function useVideoUpload() {
       const data = await res.json();
       if (!res.ok || !data.success) throw new Error(data.error || 'تعذر تحميل الإحصائيات');
       setStats(data.stats);
+      if (data.stats) {
+        setTabCounts({
+          video: data.stats.totalVideoFiles ?? 0,
+          image: data.stats.totalImageFiles ?? 0,
+        });
+      }
     } catch {
       setStats(null);
     }
   }, [listScope]);
 
   useEffect(() => {
-    fetchVideos(1);
+    fetchVideos(1, activeMediaTab);
     fetchStats();
-  }, [listScope, fetchVideos, fetchStats]);
+  }, [listScope, activeMediaTab, fetchVideos, fetchStats]);
 
   const upload = useCallback(
-    async (file, visibility = 'public') => {
+    async (file, visibility = 'public', linkTtl = 'never') => {
       setLoading(true);
       setError(null);
       setProgress(0);
@@ -183,10 +197,10 @@ export function useVideoUpload() {
       try {
         const video =
           file.size > VIDEO_UPLOAD_CHUNK_BYTES
-            ? await uploadChunked(file, visibility, setProgress)
-            : await uploadViaServer(file, visibility, setProgress);
+            ? await uploadChunked(file, visibility, linkTtl, setProgress)
+            : await uploadViaServer(file, visibility, linkTtl, setProgress);
         setProgress(100);
-        fetchVideos(1);
+        fetchVideos(1, activeMediaTab);
         fetchStats();
         return video;
       } catch (err) {
@@ -196,7 +210,7 @@ export function useVideoUpload() {
         setLoading(false);
       }
     },
-    [fetchStats, fetchVideos]
+    [activeMediaTab, fetchStats, fetchVideos]
   );
 
   const trackView = useCallback(async (id, accessToken) => {
@@ -205,7 +219,9 @@ export function useVideoUpload() {
     const data = await res.json().catch(() => ({}));
     if (data.success && typeof data.views === 'number') {
       setUploadedVideos((prev) =>
-        prev.map((video) => (video.id === id ? { ...video, views: data.views } : video))
+        prev.map((video) =>
+          video.id === id ? { ...video, views: data.views, lastViewedAt: data.lastViewedAt } : video
+        )
       );
     }
     fetchStats();
@@ -217,6 +233,14 @@ export function useVideoUpload() {
     setError(null);
   }, []);
 
+  const changeMediaTab = useCallback(
+    (tab) => {
+      setActiveMediaTab(tab);
+      fetchVideos(1, tab);
+    },
+    [fetchVideos]
+  );
+
   return {
     upload,
     progress,
@@ -227,9 +251,12 @@ export function useVideoUpload() {
     stats,
     page,
     pagination,
-    setPage: fetchVideos,
+    setPage: (p) => fetchVideos(p, activeMediaTab),
     listScope,
     setListScope,
+    activeMediaTab,
+    setActiveMediaTab: changeMediaTab,
+    tabCounts,
     trackView,
     reset,
   };

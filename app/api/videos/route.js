@@ -4,7 +4,11 @@ import { getClientIp, rateLimit } from '../../lib/rateLimit';
 import { paginationSchema } from '../../lib/validation';
 import { getOptionalAuthUser } from '../../lib/authSession';
 import { getBrowserSessionIdFromCookies } from '../../lib/browserSession';
-import { filterVideosBySession } from '../../lib/videoAccess';
+import {
+  filterVideosBySession,
+  filterVideosByMediaKind,
+  countByMediaKind,
+} from '../../lib/videoAccess';
 
 export async function GET(request) {
   const ip = getClientIp(request);
@@ -20,13 +24,14 @@ export async function GET(request) {
     visibility: url.searchParams.get('visibility') ?? undefined,
     accessToken: url.searchParams.get('accessToken') ?? undefined,
     mine: url.searchParams.get('mine') ?? undefined,
+    mediaKind: url.searchParams.get('mediaKind') ?? undefined,
   });
 
   if (!parseResult.success) {
     return NextResponse.json({ success: false, error: 'Invalid query params.' }, { status: 400 });
   }
 
-  const { page, limit, visibility, mine } = parseResult.data;
+  const { page, limit, visibility, mine, mediaKind } = parseResult.data;
   const browserSessionId = await getBrowserSessionIdFromCookies();
   const user = mine ? await getOptionalAuthUser() : null;
 
@@ -44,7 +49,10 @@ export async function GET(request) {
     mine: Boolean(mine),
   });
 
+  const counts = countByMediaKind(videos);
+
   if (visibility) videos = videos.filter((v) => v.visibility === visibility);
+  if (mediaKind) videos = filterVideosByMediaKind(videos, mediaKind);
 
   const total = videos.length;
   const totalPages = Math.max(1, Math.ceil(total / limit));
@@ -55,6 +63,7 @@ export async function GET(request) {
   return NextResponse.json({
     success: true,
     items,
+    counts,
     pagination: {
       page: safePage,
       limit,

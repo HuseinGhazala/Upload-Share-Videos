@@ -52,6 +52,9 @@ export default function HomePage() {
     trackView,
     listScope,
     setListScope,
+    activeMediaTab,
+    setActiveMediaTab,
+    tabCounts,
   } = useVideoUpload();
   const [toasts, setToasts] = useState([]);
   const [showMediaLab, setShowMediaLab] = useState(false);
@@ -166,6 +169,7 @@ export default function HomePage() {
             progress={progress}
             error={error}
             onToast={showToast}
+            onCopy={handleCopy}
             isLoggedIn={Boolean(user)}
             canUpload={Boolean(user) && Boolean(quota?.uploadAllowed)}
             maxUploadBytes={quota?.maxUploadBytes ?? MAX_VIDEO_BYTES_PER_UPLOAD}
@@ -174,25 +178,50 @@ export default function HomePage() {
         </CinematicSection>
 
         {stats && stats.totalVideos > 0 && (
-          <CinematicSection className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-3" delay={0.1}>
-            <motion.div whileHover={{ y: -2 }} className="glass-panel p-4 rounded-xl border">
-              <p className="text-xs text-white/50">إجمالي الملفات</p>
-              <p className="text-xl font-bold tabular-nums">{stats.totalVideos}</p>
-            </motion.div>
-            <motion.div whileHover={{ y: -2 }} className="glass-panel p-4 rounded-xl border">
-              <p className="text-xs text-white/50">إجمالي المشاهدات</p>
-              <p className="text-xl font-bold tabular-nums">{stats.totalViews}</p>
-            </motion.div>
-            <motion.div whileHover={{ y: -2 }} className="glass-panel p-4 rounded-xl border">
-              <p className="text-xs text-white/50">ملفات عامة</p>
-              <p className="text-xl font-bold tabular-nums">{stats.byVisibility.public}</p>
-            </motion.div>
-            <motion.div whileHover={{ y: -2 }} className="glass-panel p-4 rounded-xl border">
-              <p className="text-xs text-white/50">خاصة وغير مُدرَجة</p>
-              <p className="text-xl font-bold tabular-nums">
-                {stats.byVisibility.private + stats.byVisibility.unlisted}
-              </p>
-            </motion.div>
+          <CinematicSection className="mt-6 space-y-4" delay={0.1}>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <motion.div whileHover={{ y: -2 }} className="glass-panel p-4 rounded-xl border">
+                <p className="text-xs text-white/50">إجمالي الملفات</p>
+                <p className="text-xl font-bold tabular-nums">{stats.totalVideos}</p>
+              </motion.div>
+              <motion.div whileHover={{ y: -2 }} className="glass-panel p-4 rounded-xl border">
+                <p className="text-xs text-white/50">فيديو / صورة</p>
+                <p className="text-xl font-bold tabular-nums">
+                  {stats.totalVideoFiles ?? 0} / {stats.totalImageFiles ?? 0}
+                </p>
+              </motion.div>
+              <motion.div whileHover={{ y: -2 }} className="glass-panel p-4 rounded-xl border">
+                <p className="text-xs text-white/50">إجمالي المشاهدات</p>
+                <p className="text-xl font-bold tabular-nums">{stats.totalViews}</p>
+              </motion.div>
+              <motion.div whileHover={{ y: -2 }} className="glass-panel p-4 rounded-xl border">
+                <p className="text-xs text-white/50">خاصة وغير مُدرَجة</p>
+                <p className="text-xl font-bold tabular-nums">
+                  {stats.byVisibility.private + stats.byVisibility.unlisted}
+                </p>
+              </motion.div>
+            </div>
+            {Array.isArray(stats.recentViews) && stats.recentViews.length > 0 && (
+              <div className="glass-panel p-4 rounded-xl border">
+                <p className="text-xs text-white/50 mb-3">آخر المشاهدات</p>
+                <ul className="space-y-2 text-sm">
+                  {stats.recentViews.map((item) => (
+                    <li key={item.id} className="flex justify-between gap-3 text-white/70">
+                      <span className="truncate">
+                        {item.mediaKind === 'image' ? '🖼️' : '🎬'} {item.name}
+                      </span>
+                      <span className="text-white/40 text-xs shrink-0 tabular-nums">
+                        {item.views} ·{' '}
+                        {new Date(item.lastViewedAt).toLocaleString('ar-SA', {
+                          dateStyle: 'short',
+                          timeStyle: 'short',
+                        })}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </CinematicSection>
         )}
 
@@ -207,6 +236,9 @@ export default function HomePage() {
             listScope={listScope}
             onListScopeChange={setListScope}
             sessionUser={user}
+            activeMediaTab={activeMediaTab}
+            onMediaTabChange={setActiveMediaTab}
+            tabCounts={tabCounts}
           />
         </CinematicSection>
 

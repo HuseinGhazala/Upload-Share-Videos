@@ -1,0 +1,22 @@
+{
+  "name": "رفع ومشاركة الفيديو",
+  "short_name": "رفع فيديو",
+  "description": "ارفع فيديوهات وصور وشاركها برابط آمن — مجاني وبدون تسجيل",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0b0f1a",
+  "theme_color": "#4f46e5",
+  "orientation": "any",
+  "lang": "ar",
+  "dir": "rtl",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["photo", "video", "utilities"],
+  "screenshots": []
+}
