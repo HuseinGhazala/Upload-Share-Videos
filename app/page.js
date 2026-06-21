@@ -121,7 +121,7 @@ export default function HomePage() {
             ارفع فيديوهاتك الآن مجاناً
           </h1>
           <p className="mt-5 text-base sm:text-lg text-muted max-w-2xl mx-auto leading-relaxed">
-            ابدأ الرفع مباشرة دون أي خطوات تسجيل. واجهة عربية أنيقة، روابط فورية للمشاركة، وبدون أي تكاليف.
+            ارفع فيديوهاتك مباشرة دون تسجيل. فيديوهاتك خاصة بك فقط — لا يراها زوار آخرون، ولا تظهر أي مكتبة عند فتح الموقع.
           </p>
           <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
             <a href="#upload-zone" className="btn-primary">
@@ -130,8 +130,8 @@ export default function HomePage() {
           </div>
           <div className="mt-5 flex flex-wrap justify-center gap-2">
             <span className="chip">بدون تسجيل دخول</span>
-            <span className="chip">واجهة عربية أنيقة</span>
-            <span className="chip">روابط مباشرة جاهزة للمشاركة</span>
+            <span className="chip">فيديوهاتك خاصة بك</span>
+            <span className="chip">روابط مشاركة آمنة</span>
           </div>
         </CinematicSection>
 
@@ -141,12 +141,12 @@ export default function HomePage() {
             <p className="text-white/60">اسحب الملف وأفلِته في منطقة الرفع، أو انقر للاختيار من جهازك.</p>
           </CinematicCard>
           <CinematicCard className="p-5 text-sm">
-            <p className="text-indigo-200 font-semibold mb-2">٢. حدّد مستوى الظهور</p>
-            <p className="text-white/60">اختر بين «عام» أو «خاص» أو «غير مُدرَج» للتحكّم بمن يستطيع المشاهدة.</p>
+            <p className="text-indigo-200 font-semibold mb-2">٢. ارفع الفيديو</p>
+            <p className="text-white/60">يُحفظ الفيديو في جلسة متصفّحك فقط — لن يراه أي زائر آخر على الموقع.</p>
           </CinematicCard>
           <CinematicCard className="p-5 text-sm">
             <p className="text-amber-200 font-semibold mb-2">٣. شارك الرابط</p>
-            <p className="text-white/60">احصل على رابط مباشر فور انتهاء الرفع، وانسخه بضغطة واحدة.</p>
+            <p className="text-white/60">انسخ رابط المشاركة لإرساله لمن تريد — بدون رابط لن يستطيع أحد مشاهدة الفيديو.</p>
           </CinematicCard>
         </CinematicSection>
 
@@ -172,7 +172,7 @@ export default function HomePage() {
           </div>
         </CinematicSection>
 
-        {stats && (
+        {stats && stats.totalVideos > 0 && (
           <CinematicSection className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-3" delay={0.1}>
             <motion.div whileHover={{ y: -2 }} className="glass-panel p-4 rounded-xl border">
               <p className="text-xs text-white/50">إجمالي الفيديوهات</p>

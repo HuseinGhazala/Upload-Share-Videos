@@ -9,6 +9,8 @@ import {
   getAuthenticatedUploadContext,
   consumeUploadCreditAfterSuccessfulSave,
 } from '../../../../lib/authSession';
+import { getBrowserSessionIdFromCookies } from '../../../../lib/browserSession';
+import { verifyChunkUploadOwnership } from '../../../../lib/videoAccess';
 
 export async function POST(request) {
   try {
@@ -35,6 +37,8 @@ export async function POST(request) {
       );
     }
 
+    const browserSessionId = await getBrowserSessionIdFromCookies();
+
     const body = await request.json();
     const sessionId = body.sessionId?.toString();
     const sessionToken = body.sessionToken?.toString();
@@ -54,7 +58,7 @@ export async function POST(request) {
       return NextResponse.json({ success: false, error: 'Invalid session.' }, { status: 403 });
     }
 
-    if (!manifest.ownerId || manifest.ownerId !== user.id) {
+    if (!verifyChunkUploadOwnership(manifest, { user, browserSessionId })) {
       return NextResponse.json({ success: false, error: 'هذه الجلسة لا تخص حسابك.' }, { status: 403 });
     }
 
@@ -85,6 +89,7 @@ export async function POST(request) {
       mimeType: manifest.mimeType,
       visibility: manifest.visibility,
       ownerId: manifest.ownerId,
+      browserSessionId: manifest.browserSessionId ?? browserSessionId,
       maxVideoBytes: manifest.maxUploadBytes,
     });
 

@@ -8,6 +8,7 @@ import { chunkTempRoot } from '../../../../lib/chunkedUploadConfig';
 import { VIDEO_UPLOAD_CHUNK_BYTES } from '../../../../lib/uploadChunkSize';
 import { cleanupExpiredChunkSessions } from '../../../../lib/chunkCleanup';
 import { getAuthenticatedUploadContext } from '../../../../lib/authSession';
+import { getBrowserSessionIdFromCookies } from '../../../../lib/browserSession';
 
 /** Hard ceiling independent of tier (prevents pathological manifests). */
 const MAX_CHUNKS_CAP = 500;
@@ -66,6 +67,7 @@ export async function POST(request) {
 
     const sessionId = crypto.randomUUID();
     const sessionToken = crypto.randomBytes(24).toString('hex');
+    const browserSessionId = await getBrowserSessionIdFromCookies();
     const root = chunkTempRoot();
     await mkdir(root, { recursive: true });
     const dir = path.join(root, sessionId);
@@ -77,6 +79,7 @@ export async function POST(request) {
       mimeType,
       visibility,
       ownerId: user.id,
+      browserSessionId,
       maxUploadBytes,
       totalChunks,
       chunkSizeBytes: VIDEO_UPLOAD_CHUNK_BYTES,

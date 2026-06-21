@@ -33,7 +33,7 @@ export function validateVideoPayload({ name, size, mimeType, visibility }, maxVi
  */
 export async function persistVideoBuffer(
   buffer,
-  { name, size, mimeType, visibility, ownerId, maxVideoBytes }
+  { name, size, mimeType, visibility, ownerId, browserSessionId, maxVideoBytes }
 ) {
   const check = validateVideoPayload({ name, size, mimeType, visibility }, maxVideoBytes ?? MAX_VIDEO_SIZE);
   if (check.error) {
@@ -50,6 +50,7 @@ export async function persistVideoBuffer(
     visibility: visibilityData,
     views: 0,
     ownerId: ownerId || null,
+    browserSessionId: browserSessionId || null,
     source: 'local',
     url: '',
     rawUrl: '',

@@ -3,11 +3,8 @@ import { getAllVideos } from '../../lib/videoStore';
 import { getClientIp, rateLimit } from '../../lib/rateLimit';
 import { paginationSchema } from '../../lib/validation';
 import { getOptionalAuthUser } from '../../lib/authSession';
-
-function canAccess(video, accessToken) {
-  if (video.visibility === 'public') return true;
-  return accessToken && accessToken === video.accessToken;
-}
+import { getBrowserSessionIdFromCookies } from '../../lib/browserSession';
+import { filterVideosBySession } from '../../lib/videoAccess';
 
 export async function GET(request) {
   const ip = getClientIp(request);
@@ -29,43 +26,25 @@ export async function GET(request) {
     return NextResponse.json({ success: false, error: 'Invalid query params.' }, { status: 400 });
   }
 
-  const { page, limit, visibility, accessToken, mine } = parseResult.data;
+  const { page, limit, visibility, mine } = parseResult.data;
+  const browserSessionId = await getBrowserSessionIdFromCookies();
+  const user = mine ? await getOptionalAuthUser() : null;
 
-  if (mine) {
-    const user = await getOptionalAuthUser();
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: 'يجب تسجيل الدخول لمشاهدة فيديوهاتك.' },
-        { status: 401 }
-      );
-    }
-
-    let videos = await getAllVideos();
-    videos = videos.filter((v) => v.ownerId === user.id);
-
-    const total = videos.length;
-    const totalPages = Math.max(1, Math.ceil(total / limit));
-    const safePage = Math.min(page, totalPages);
-    const start = (safePage - 1) * limit;
-    const items = videos.slice(start, start + limit);
-
-    return NextResponse.json({
-      success: true,
-      items,
-      pagination: {
-        page: safePage,
-        limit,
-        total,
-        totalPages,
-        hasNext: safePage < totalPages,
-        hasPrev: safePage > 1,
-      },
-    });
+  if (mine && !user) {
+    return NextResponse.json(
+      { success: false, error: 'يجب تسجيل الدخول لمشاهدة فيديوهاتك.' },
+      { status: 401 }
+    );
   }
 
   let videos = await getAllVideos();
+  videos = filterVideosBySession(videos, {
+    browserSessionId,
+    userId: user?.id,
+    mine: Boolean(mine),
+  });
+
   if (visibility) videos = videos.filter((v) => v.visibility === visibility);
-  videos = videos.filter((v) => canAccess(v, accessToken));
 
   const total = videos.length;
   const totalPages = Math.max(1, Math.ceil(total / limit));

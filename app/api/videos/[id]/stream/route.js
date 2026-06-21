@@ -1,10 +1,8 @@
 import { NextResponse } from 'next/server';
 import { getVideoById } from '../../../../lib/videoStore';
-
-function canAccess(video, token) {
-  if (video.visibility === 'public') return true;
-  return token && token === video.accessToken;
-}
+import { getBrowserSessionIdFromCookies } from '../../../../lib/browserSession';
+import { getOptionalAuthUser } from '../../../../lib/authSession';
+import { canAccessVideo } from '../../../../lib/videoAccess';
 
 export async function GET(request, { params }) {
   const video = await getVideoById(params.id);
@@ -14,7 +12,10 @@ export async function GET(request, { params }) {
 
   const { searchParams } = new URL(request.url);
   const accessToken = searchParams.get('accessToken');
-  if (!canAccess(video, accessToken)) {
+  const browserSessionId = await getBrowserSessionIdFromCookies();
+  const user = await getOptionalAuthUser();
+
+  if (!canAccessVideo(video, { accessToken, browserSessionId, userId: user?.id })) {
     return NextResponse.json({ success: false, error: 'Unauthorized access.' }, { status: 403 });
   }
 

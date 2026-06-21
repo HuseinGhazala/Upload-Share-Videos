@@ -4,6 +4,11 @@ import {
   verifyAdminSessionCookieValue,
   ADMIN_SESSION_COOKIE_NAME,
 } from '@/app/lib/adminSession';
+import {
+  getOrCreateBrowserSessionId,
+  BROWSER_SESSION_COOKIE_NAME,
+  browserSessionCookieOptions,
+} from '@/app/lib/browserSession';
 
 const SUPABASE_URL =
   process.env.NEXT_PUBLIC_SUPABASE_URL ?? 'https://placeholder.supabase.co';
@@ -58,6 +63,12 @@ function noStoreDocumentHeaders(res) {
 export async function middleware(request) {
   const { pathname } = request.nextUrl;
 
+  if (pathname.startsWith('/uploads/')) {
+    const blocked = NextResponse.json({ success: false, error: 'Forbidden.' }, { status: 403 });
+    noStoreDocumentHeaders(blocked);
+    return blocked;
+  }
+
   if (pathname.startsWith('/admin')) {
     const isLoginPath = pathname === '/admin/login';
     const token = request.cookies.get(ADMIN_SESSION_COOKIE_NAME)?.value;
@@ -105,6 +116,15 @@ export async function middleware(request) {
   );
 
   await supabase.auth.getUser();
+
+  const { sessionId, isNew } = getOrCreateBrowserSessionId(request);
+  if (isNew) {
+    supabaseResponse.cookies.set(
+      BROWSER_SESSION_COOKIE_NAME,
+      sessionId,
+      browserSessionCookieOptions()
+    );
+  }
 
   noStoreDocumentHeaders(supabaseResponse);
   return supabaseResponse;

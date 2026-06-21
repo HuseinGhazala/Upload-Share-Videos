@@ -5,6 +5,7 @@ import {
   getAuthenticatedUploadContext,
   consumeUploadCreditAfterSuccessfulSave,
 } from '../../lib/authSession';
+import { getBrowserSessionIdFromCookies } from '../../lib/browserSession';
 
 export async function POST(request) {
   try {
@@ -57,6 +58,7 @@ export async function POST(request) {
 
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
+    const browserSessionId = await getBrowserSessionIdFromCookies();
 
     const savedVideo = await persistVideoBuffer(buffer, {
       name: file.name,
@@ -64,6 +66,7 @@ export async function POST(request) {
       mimeType: file.type,
       visibility: visibilityInput,
       ownerId: user.id,
+      browserSessionId,
       maxVideoBytes: maxUploadBytes,
     });
 

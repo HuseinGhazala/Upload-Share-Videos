@@ -4,6 +4,8 @@ import { readFile, writeFile } from 'fs/promises';
 import { getClientIp, rateLimit } from '../../../../lib/rateLimit';
 import { chunkTempRoot } from '../../../../lib/chunkedUploadConfig';
 import { getAuthenticatedUploadContext } from '../../../../lib/authSession';
+import { getBrowserSessionIdFromCookies } from '../../../../lib/browserSession';
+import { verifyChunkUploadOwnership } from '../../../../lib/videoAccess';
 
 export async function POST(request) {
   try {
@@ -39,6 +41,8 @@ export async function POST(request) {
       );
     }
 
+    const browserSessionId = await getBrowserSessionIdFromCookies();
+
     const dir = path.join(chunkTempRoot(), sessionId);
     let manifest;
     try {
@@ -51,7 +55,7 @@ export async function POST(request) {
       return NextResponse.json({ success: false, error: 'Invalid session.' }, { status: 403 });
     }
 
-    if (!manifest.ownerId || manifest.ownerId !== user.id) {
+    if (!verifyChunkUploadOwnership(manifest, { user, browserSessionId })) {
       return NextResponse.json({ success: false, error: 'هذه الجلسة لا تخص حسابك.' }, { status: 403 });
     }
 
