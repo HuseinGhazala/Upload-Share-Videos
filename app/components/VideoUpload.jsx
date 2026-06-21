@@ -4,8 +4,7 @@ import Link from 'next/link';
 import VideoPreview from './VideoPreview';
 import ProgressBar from './ProgressBar';
 import { FREE_PUBLIC_MODE, MAX_VIDEO_BYTES_PER_UPLOAD } from '@/app/lib/plans';
-
-const ALLOWED_TYPES = ['video/mp4', 'video/webm', 'video/quicktime'];
+import { MEDIA_ACCEPT, MEDIA_FORMATS_AR, isAllowedMediaFile } from '@/app/lib/mediaTypes';
 
 export default function VideoUpload({
   onUpload,
@@ -30,8 +29,8 @@ export default function VideoUpload({
 
   const validateFile = useCallback(
     (file) => {
-      if (!ALLOWED_TYPES.includes(file.type)) {
-        return 'صيغة الملف غير مدعومة. الصيغ المتاحة: MP4 أو WebM أو MOV.';
+      if (!isAllowedMediaFile(file.name, file.type)) {
+        return `صيغة الملف غير مدعومة. الصيغ المتاحة: ${MEDIA_FORMATS_AR}.`;
       }
       if (file.size > maxUploadBytes) {
         const mb = Math.max(1, Math.round(maxUploadBytes / (1024 * 1024)));
@@ -58,9 +57,9 @@ export default function VideoUpload({
         const result = await onUpload(file, visibility);
         setLastUploaded(result);
         setSelectedFile(null);
-        onToast('تم رفع الفيديو بنجاح', 'success');
+        onToast(file.type.startsWith('image/') ? 'تم رفع الصورة بنجاح' : 'تم رفع الفيديو بنجاح', 'success');
       } catch (e) {
-        onToast(e.message ? `تعذّر الرفع: ${e.message}` : 'تعذّر رفع الفيديو، حاول مرة أخرى.', 'error');
+        onToast(e.message ? `تعذّر الرفع: ${e.message}` : 'تعذّر رفع الملف، حاول مرة أخرى.', 'error');
       }
     },
     [onUpload, onToast, visibility, effectiveCanUpload, validateFile]
@@ -107,7 +106,7 @@ export default function VideoUpload({
       )}
       {FREE_PUBLIC_MODE && (
         <p className="mb-4 text-center text-emerald-200/85 text-sm">
-          الرفع متاح للجميع مجاناً وبدون تسجيل دخول. حد الحجم: {maxMbRounded} ميجابايت لكل فيديو.
+          الرفع متاح للجميع مجاناً وبدون تسجيل دخول. حد الحجم: {maxMbRounded} ميجابايت لكل ملف.
         </p>
       )}
       <div
@@ -128,7 +127,7 @@ export default function VideoUpload({
         <input
           ref={inputRef}
           type="file"
-          accept="video/mp4,video/webm,video/quicktime"
+          accept={MEDIA_ACCEPT}
           className="hidden"
           onChange={onInputChange}
           disabled={loading || !effectiveCanUpload}
@@ -149,19 +148,19 @@ export default function VideoUpload({
           <div>
             <p className="text-white font-semibold text-lg">
               {loading
-                ? 'جاري رفع الفيديو…'
+                ? 'جاري رفع الملف…'
                 : !effectiveCanUpload
                   ? !effectiveIsLoggedIn
                     ? 'سجّل الدخول واختر باقة لبدء الرفع'
                     : 'لا يوجد رصيد — اختر باقة من صفحة الأسعار'
                   : dragOver
                     ? 'أفلِت الملف هنا'
-                    : 'اسحب الفيديو وأفلِته هنا'}
+                    : 'اسحب فيديو أو صورة وأفلِته هنا'}
             </p>
             <p className="text-white/40 text-sm mt-1">
               {loading
                 ? 'يرجى الانتظار حتى يكتمل الرفع'
-                : `أو انقر للاختيار — MP4 أو WebM أو MOV، حتى ${maxMbRounded} ميجابايت`}
+                : `أو انقر للاختيار — ${MEDIA_FORMATS_AR}، حتى ${maxMbRounded} ميجابايت`}
             </p>
           </div>
         </div>
@@ -202,7 +201,11 @@ export default function VideoUpload({
 
       {lastUploaded && (
         <div className="mt-4 px-4 py-3 rounded-xl bg-green-500/10 border border-green-500/20">
-          <p className="text-green-400 text-sm font-medium">اكتمل رفع الفيديو</p>
+          <p className="text-green-400 text-sm font-medium">
+            {lastUploaded.mediaKind === 'image' || lastUploaded.mimeType?.startsWith('image/')
+              ? 'اكتمل رفع الصورة'
+              : 'اكتمل رفع الفيديو'}
+          </p>
           <p className="text-white/50 text-xs mt-1 truncate">{lastUploaded.url}</p>
           {lastUploaded.visibility !== 'public' && (
             <p className="text-amber-200/90 text-xs mt-1">

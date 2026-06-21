@@ -2,6 +2,7 @@
 import Image from 'next/image';
 import { useState } from 'react';
 import { FREE_PUBLIC_MODE } from '@/app/lib/plans';
+import { isImageMedia } from '@/app/lib/mediaTypes';
 
 function formatDate(iso) {
   return new Date(iso).toLocaleString('ar-SA', {
@@ -50,7 +51,7 @@ export default function VideoGallery({
     <section className="mt-10">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
         <h2 className="text-xl font-bold text-white flex items-center gap-2">
-          <span className="text-2xl">🎬</span>
+          <span className="text-2xl">📁</span>
           {title}
           <span className="ms-2 text-sm font-normal bg-white/10 text-white/60 rounded-full px-2 py-0.5 tabular-nums">
             {pagination?.total ?? videos.length}
@@ -81,16 +82,28 @@ export default function VideoGallery({
       </div>
 
       {!videos.length && !loading && listScope === 'mine' ? (
-        <p className="text-white/45 text-sm mb-4">لم تقم برفع أي فيديو حتى الآن.</p>
+        <p className="text-white/45 text-sm mb-4">لم تقم برفع أي ملف حتى الآن.</p>
       ) : null}
-      {loading && <p className="text-sm text-white/50 mb-3">جاري تحميل الفيديوهات…</p>}
+      {loading && <p className="text-sm text-white/50 mb-3">جاري تحميل الملفات…</p>}
       <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-        {videos.map((video) => (
+        {videos.map((video) => {
+          const isImage = isImageMedia(video);
+          return (
           <div
             key={video.id}
             className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur overflow-hidden hover:border-indigo-500/50 transition-all duration-300 group"
           >
-            <div className="relative bg-black aspect-video">
+            <div className={`relative bg-black ${isImage ? 'aspect-square' : 'aspect-video'}`}>
+              {isImage ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={video.url}
+                  alt={video.name}
+                  className="w-full h-full object-contain"
+                  onLoad={() => onTrackView?.(video.id, null)}
+                />
+              ) : (
+                <>
               {video.thumbnailUrl ? (
                 <Image
                   src={video.thumbnailUrl}
@@ -121,6 +134,8 @@ export default function VideoGallery({
                   </div>
                 </div>
               )}
+                </>
+              )}
             </div>
 
             <div className="p-4">
@@ -148,6 +163,9 @@ export default function VideoGallery({
                 </span>
               )}
               <span className="mt-2 ms-2 inline-block text-xs px-2 py-0.5 rounded-full bg-white/10 text-white/70 border border-white/20">
+                {isImage ? '🖼️ صورة' : '🎬 فيديو'}
+              </span>
+              <span className="mt-2 ms-2 inline-block text-xs px-2 py-0.5 rounded-full bg-white/10 text-white/70 border border-white/20">
                 {visibilityAr(video.visibility)}
               </span>
 
@@ -164,7 +182,8 @@ export default function VideoGallery({
               </div>
             </div>
           </div>
-        ))}
+          );
+        })}
       </div>
       {pagination && pagination.totalPages > 1 && (
         <div className="flex justify-center gap-2 mt-6">

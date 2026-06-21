@@ -1,17 +1,20 @@
 'use client';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { resolveMediaMimeType } from '@/app/lib/mediaTypes';
 
 export default function VideoPreview({ file }) {
   const videoRef = useRef(null);
-  const urlRef = useRef(null);
+  const resolvedMime = file ? resolveMediaMimeType(file.name, file.type) : '';
+  const isImage = resolvedMime.startsWith('image/');
+  const [previewUrl, setPreviewUrl] = useState(null);
 
   useEffect(() => {
     if (!file) return;
     const url = URL.createObjectURL(file);
-    urlRef.current = url;
-    if (videoRef.current) videoRef.current.src = url;
+    setPreviewUrl(url);
+    if (!isImage && videoRef.current) videoRef.current.src = url;
     return () => URL.revokeObjectURL(url);
-  }, [file]);
+  }, [file, isImage]);
 
   if (!file) return null;
 
@@ -21,12 +24,17 @@ export default function VideoPreview({ file }) {
 
   return (
     <div className="mt-4 rounded-2xl overflow-hidden border border-white/10 bg-black/30">
-      <video
-        ref={videoRef}
-        controls
-        className="w-full max-h-64 object-contain bg-black"
-        preload="metadata"
-      />
+      {isImage ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={previewUrl ?? ''} alt={file.name} className="w-full max-h-64 object-contain bg-black" />
+      ) : (
+        <video
+          ref={videoRef}
+          controls
+          className="w-full max-h-64 object-contain bg-black"
+          preload="metadata"
+        />
+      )}
       <div className="px-4 py-3 flex items-center justify-between">
         <div>
           <p className="text-sm font-medium text-white truncate max-w-xs">{file.name}</p>

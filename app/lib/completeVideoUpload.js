@@ -5,8 +5,14 @@ import { addVideo } from './videoStore';
 import { isGitHubUploadConfigured, uploadVideoToGitHub } from './githubUpload';
 import { visibilitySchema } from './validation';
 import { FREE_MAX_VIDEO_BYTES } from './subscription';
+import {
+  ALLOWED_VIDEO_TYPES,
+  getMediaKind,
+  resolveMediaMimeType,
+} from './mediaTypes';
 
-export const ALLOWED_VIDEO_TYPES = ['video/mp4', 'video/webm', 'video/quicktime'];
+export { ALLOWED_VIDEO_TYPES } from './mediaTypes';
+
 /** Legacy default max (matches free tier). */
 export const MAX_VIDEO_SIZE = FREE_MAX_VIDEO_BYTES;
 
@@ -18,14 +24,16 @@ export function validateVideoPayload({ name, size, mimeType, visibility }, maxVi
   if (!visibilityResult.success) {
     return { error: 'إعداد «الظهور» غير صالح.' };
   }
-  if (!ALLOWED_VIDEO_TYPES.includes(mimeType)) {
-    return { error: 'نوع الملف غير مدعوم. المسموح: mp4، webm، mov' };
+  const resolvedMimeType = resolveMediaMimeType(name, mimeType);
+  const mediaKind = getMediaKind(resolvedMimeType);
+  if (!mediaKind) {
+    return { error: 'نوع الملف غير مدعوم. المسموح: mp4، webm، mov، jpg، png، webp، gif، svg' };
   }
   if (size > maxVideoBytes) {
     const mb = Math.round(maxVideoBytes / (1024 * 1024));
     return { error: `الملف يتجاوز الحد المسموح لباقتك (${mb} ميجابايت).` };
   }
-  return { visibility: visibilityResult.data };
+  return { visibility: visibilityResult.data, mediaKind, mimeType: resolvedMimeType };
 }
 
 /**
@@ -40,12 +48,15 @@ export async function persistVideoBuffer(
     throw new Error(check.error);
   }
   const visibilityData = check.visibility;
+  const mediaKind = check.mediaKind;
+  const resolvedMimeType = check.mimeType ?? mimeType;
 
   const baseVideo = {
     id: crypto.randomUUID(),
     name,
     size,
-    mimeType,
+    mimeType: resolvedMimeType,
+    mediaKind,
     uploadedAt: new Date().toISOString(),
     visibility: visibilityData,
     views: 0,
@@ -64,7 +75,7 @@ export async function persistVideoBuffer(
     try {
       const githubResult = await uploadVideoToGitHub(buffer, {
         originalName: name,
-        mimeType,
+        mimeType: resolvedMimeType,
       });
       if (githubResult) {
         return await addVideo({
@@ -87,7 +98,7 @@ export async function persistVideoBuffer(
 
   const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
   await mkdir(uploadsDir, { recursive: true });
-  const filename = `video_${Date.now()}_${name.replace(/\s+/g, '_')}`;
+  const filename = `media_${Date.now()}_${name.replace(/\s+/g, '_')}`;
   const filepath = path.join(uploadsDir, filename);
   await writeFile(filepath, buffer);
 

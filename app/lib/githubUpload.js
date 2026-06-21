@@ -36,7 +36,12 @@ function extFromMime(mimeType) {
   if (mimeType === 'video/mp4') return 'mp4';
   if (mimeType === 'video/webm') return 'webm';
   if (mimeType === 'video/quicktime') return 'mov';
-  return 'mp4';
+  if (mimeType === 'image/jpeg') return 'jpg';
+  if (mimeType === 'image/png') return 'png';
+  if (mimeType === 'image/webp') return 'webp';
+  if (mimeType === 'image/gif') return 'gif';
+  if (mimeType === 'image/svg+xml') return 'svg';
+  return 'bin';
 }
 
 async function putFileToRepo(buffer, contentPath, config) {

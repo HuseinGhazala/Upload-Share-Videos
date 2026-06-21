@@ -1,3 +1,5 @@
+import path from 'path';
+import { readFile } from 'fs/promises';
 import { NextResponse } from 'next/server';
 import { getVideoById } from '../../../../lib/videoStore';
 import { getBrowserSessionIdFromCookies } from '../../../../lib/browserSession';
@@ -32,9 +34,26 @@ export async function GET(request, { params }) {
     return NextResponse.redirect(video.sourceUrl, 307);
   }
 
+  if (video.sourceUrl.startsWith('/uploads/')) {
+    const filepath = path.join(process.cwd(), 'public', video.sourceUrl);
+    try {
+      const buffer = await readFile(filepath);
+      return new NextResponse(buffer, {
+        headers: {
+          'Content-Type': video.mimeType || 'application/octet-stream',
+          'Cache-Control': 'private, no-store',
+        },
+      });
+    } catch {
+      return NextResponse.json({ success: false, error: 'File not found.' }, { status: 404 });
+    }
+  }
+
   if (forwardedHost) {
     return NextResponse.redirect(`${forwardedProto}://${forwardedHost}${video.sourceUrl}`, 307);
   }
 
   return NextResponse.redirect(new URL(video.sourceUrl, request.url), 307);
 }
+
+export const runtime = 'nodejs';

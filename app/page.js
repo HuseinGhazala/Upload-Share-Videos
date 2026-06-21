@@ -118,10 +118,10 @@ export default function HomePage() {
             مجاني للجميع — بدون تسجيل ولا حساب
           </div>
           <h1 className="headline-display bg-gradient-to-b from-white via-indigo-100 to-indigo-300 bg-clip-text text-transparent">
-            ارفع فيديوهاتك الآن مجاناً
+            ارفع فيديوهاتك وصورك مجاناً
           </h1>
           <p className="mt-5 text-base sm:text-lg text-muted max-w-2xl mx-auto leading-relaxed">
-            ارفع فيديوهاتك مباشرة دون تسجيل. فيديوهاتك خاصة بك فقط — لا يراها زوار آخرون، ولا تظهر أي مكتبة عند فتح الموقع.
+            ارفع فيديوهات وصور مباشرة دون تسجيل. ملفاتك خاصة بك فقط — لا يراها زوار آخرون، ولا تظهر أي مكتبة عند فتح الموقع.
           </p>
           <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
             <a href="#upload-zone" className="btn-primary">
@@ -130,23 +130,24 @@ export default function HomePage() {
           </div>
           <div className="mt-5 flex flex-wrap justify-center gap-2">
             <span className="chip">بدون تسجيل دخول</span>
-            <span className="chip">فيديوهاتك خاصة بك</span>
+            <span className="chip">فيديو وصور</span>
+            <span className="chip">ملفاتك خاصة بك</span>
             <span className="chip">روابط مشاركة آمنة</span>
           </div>
         </CinematicSection>
 
         <CinematicSection className="mb-10 grid gap-4 sm:grid-cols-3" delay={0.1}>
           <CinematicCard className="p-5 text-sm">
-            <p className="text-emerald-200 font-semibold mb-2">١. اختر فيديوك</p>
-            <p className="text-white/60">اسحب الملف وأفلِته في منطقة الرفع، أو انقر للاختيار من جهازك.</p>
+            <p className="text-emerald-200 font-semibold mb-2">١. اختر ملفك</p>
+            <p className="text-white/60">اسحب فيديو أو صورة وأفلِته في منطقة الرفع، أو انقر للاختيار من جهازك.</p>
           </CinematicCard>
           <CinematicCard className="p-5 text-sm">
-            <p className="text-indigo-200 font-semibold mb-2">٢. ارفع الفيديو</p>
-            <p className="text-white/60">يُحفظ الفيديو في جلسة متصفّحك فقط — لن يراه أي زائر آخر على الموقع.</p>
+            <p className="text-indigo-200 font-semibold mb-2">٢. ارفع الملف</p>
+            <p className="text-white/60">يُحفظ الملف في جلسة متصفّحك فقط — لن يراه أي زائر آخر على الموقع.</p>
           </CinematicCard>
           <CinematicCard className="p-5 text-sm">
             <p className="text-amber-200 font-semibold mb-2">٣. شارك الرابط</p>
-            <p className="text-white/60">انسخ رابط المشاركة لإرساله لمن تريد — بدون رابط لن يستطيع أحد مشاهدة الفيديو.</p>
+            <p className="text-white/60">انسخ رابط المشاركة لإرساله لمن تريد — بدون رابط لن يستطيع أحد مشاهدة الملف.</p>
           </CinematicCard>
         </CinematicSection>
 
@@ -154,10 +155,10 @@ export default function HomePage() {
           <div id="upload-zone" className="glass-panel p-6 sm:p-8 scroll-mt-24">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
               <h2 className="text-xl font-semibold">منطقة الرفع المجانية</h2>
-              <span className="chip">حتى ٥٠ ميجابايت لكل فيديو</span>
+              <span className="chip">حتى ٥٠ ميجابايت لكل ملف</span>
             </div>
             <p className="text-sm text-white/60 mb-5">
-              ارفع فيديوهاتك مباشرة بدون تسجيل، مع شريط تقدّم مباشر وتحكم كامل في مستوى الظهور.
+              ارفع فيديوهات وصور مباشرة بدون تسجيل، مع شريط تقدّم مباشر وروابط مشاركة آمنة.
             </p>
           <VideoUpload
             onUpload={upload}
@@ -175,7 +176,7 @@ export default function HomePage() {
         {stats && stats.totalVideos > 0 && (
           <CinematicSection className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-3" delay={0.1}>
             <motion.div whileHover={{ y: -2 }} className="glass-panel p-4 rounded-xl border">
-              <p className="text-xs text-white/50">إجمالي الفيديوهات</p>
+              <p className="text-xs text-white/50">إجمالي الملفات</p>
               <p className="text-xl font-bold tabular-nums">{stats.totalVideos}</p>
             </motion.div>
             <motion.div whileHover={{ y: -2 }} className="glass-panel p-4 rounded-xl border">
@@ -183,7 +184,7 @@ export default function HomePage() {
               <p className="text-xl font-bold tabular-nums">{stats.totalViews}</p>
             </motion.div>
             <motion.div whileHover={{ y: -2 }} className="glass-panel p-4 rounded-xl border">
-              <p className="text-xs text-white/50">فيديوهات عامة</p>
+              <p className="text-xs text-white/50">ملفات عامة</p>
               <p className="text-xl font-bold tabular-nums">{stats.byVisibility.public}</p>
             </motion.div>
             <motion.div whileHover={{ y: -2 }} className="glass-panel p-4 rounded-xl border">

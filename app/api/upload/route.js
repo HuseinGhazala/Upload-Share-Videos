@@ -63,7 +63,7 @@ export async function POST(request) {
     const savedVideo = await persistVideoBuffer(buffer, {
       name: file.name,
       size: file.size,
-      mimeType: file.type,
+      mimeType: check.mimeType ?? file.type,
       visibility: visibilityInput,
       ownerId: user.id,
       browserSessionId,
