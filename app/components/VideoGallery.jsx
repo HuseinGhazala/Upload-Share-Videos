@@ -36,28 +36,6 @@ function getWatchStreamUrl(video) {
   return `${video.url}${video.visibility === 'public' ? '' : `?accessToken=${video.accessToken}`}`;
 }
 
-function getGithubRepoUrl(video) {
-  if (video.ghOwner && video.ghRepo) {
-    return `https://github.com/${video.ghOwner}/${video.ghRepo}`;
-  }
-  return null;
-}
-
-function getGithubFileUrl(video) {
-  if (video.source === 'github' && video.sourceUrl?.startsWith('http')) {
-    return video.sourceUrl;
-  }
-  return null;
-}
-
-function toAbsoluteUrl(url) {
-  if (!url || url.startsWith('http')) return url;
-  if (typeof window === 'undefined') return url;
-  const { protocol, hostname, port } = window.location;
-  const safeHost = hostname === '0.0.0.0' ? 'localhost' : hostname;
-  return `${protocol}//${safeHost}${port ? `:${port}` : ''}${url}`;
-}
-
 export default function VideoGallery({
   videos,
   onCopy,
@@ -118,9 +96,6 @@ export default function VideoGallery({
       <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {videos.map((video) => {
           const isImage = isImageMedia(video);
-          const watchUrl = toAbsoluteUrl(getWatchStreamUrl(video));
-          const githubRepoUrl = getGithubRepoUrl(video);
-          const githubFileUrl = getGithubFileUrl(video);
           return (
           <div
             key={video.id}
@@ -177,38 +152,6 @@ export default function VideoGallery({
             <div className="p-4">
               <p className="text-sm font-semibold text-white truncate">{video.name}</p>
               <p className="text-xs text-white/40 mt-0.5">{formatSize(video.size)} · {formatDate(video.uploadedAt)}</p>
-
-              <div className="mt-2 rounded-lg border border-white/10 bg-black/25 px-2.5 py-2">
-                <p className="text-[10px] text-white/45 mb-1">رابط المشاهدة</p>
-                <p className="text-[11px] text-indigo-200/90 break-all leading-relaxed" dir="ltr">
-                  {watchUrl}
-                </p>
-              </div>
-
-              {githubFileUrl && (
-                <div className="mt-2 rounded-lg border border-gray-500/25 bg-gray-500/10 px-2.5 py-2">
-                  <p className="text-[10px] text-white/45 mb-1">رابط GitHub</p>
-                  <a
-                    href={githubFileUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-[11px] text-gray-200 break-all leading-relaxed hover:text-white transition"
-                    dir="ltr"
-                  >
-                    {githubFileUrl}
-                  </a>
-                  {githubRepoUrl && (
-                    <a
-                      href={githubRepoUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mt-1.5 inline-flex items-center gap-1 text-[11px] text-gray-300 hover:text-white transition"
-                    >
-                      🐙 فتح المستودع
-                    </a>
-                  )}
-                </div>
-              )}
 
               {video.source && (
                 <span
