@@ -97,3 +97,5 @@ video-upload-app/
 Max file size: **50MB**
 
 # Upload-Share-Videos
+
+This is a simple update to the project.
