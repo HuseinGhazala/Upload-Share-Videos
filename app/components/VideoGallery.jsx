@@ -1,15 +1,10 @@
 'use client';
 
 import Image from 'next/image';
-
-import { useState } from 'react';
-
+import { useState, useEffect, useRef } from 'react';
 import { FREE_PUBLIC_MODE } from '@/app/lib/plans';
-
 import { isImageMedia } from '@/app/lib/mediaTypes';
-
 import ShareTools from './ShareTools';
-
 
 
 function formatDate(iso) {
@@ -131,13 +126,43 @@ function ViewStats({ item }) {
 
 
 function MediaCard({ item, playing, onPlayChange, onCopy, onTrackView }) {
-
   const isImage = isImageMedia(item);
+  const videoRef = useRef(null);
 
+  useEffect(() => {
+    if (isImage) return;
+    const video = videoRef.current;
+    if (!video) return;
 
+    const streamUrl = (item.hlsStatus === 'ready' && item.hlsUrl) ? item.hlsUrl : item.url;
+
+    let hlsInstance = null;
+
+    if (item.hlsStatus === 'ready') {
+      import('hls.js').then((HlsModule) => {
+        const Hls = HlsModule.default;
+        if (Hls.isSupported()) {
+          hlsInstance = new Hls({
+            capLevelToPlayerSize: true,
+          });
+          hlsInstance.loadSource(streamUrl);
+          hlsInstance.attachMedia(video);
+        } else {
+          video.src = streamUrl;
+        }
+      }).catch(console.error);
+    } else {
+      video.src = streamUrl;
+    }
+
+    return () => {
+      if (hlsInstance) {
+        hlsInstance.destroy();
+      }
+    };
+  }, [item.url, item.hlsStatus, item.hlsUrl, isImage]);
 
   return (
-
     <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur overflow-hidden hover:border-indigo-500/50 transition-all duration-300 group">
 
       <div className={`relative bg-black ${isImage ? 'aspect-square' : 'aspect-video'}`}>
@@ -189,13 +214,9 @@ function MediaCard({ item, playing, onPlayChange, onCopy, onTrackView }) {
             ) : null}
 
             <video
-
-              src={item.url}
-
+              ref={videoRef}
               controls
-
               preload="none"
-
               className="w-full h-full object-contain"
 
               onPlay={() => {

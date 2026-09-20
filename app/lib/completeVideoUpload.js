@@ -107,7 +107,7 @@ export async function persistVideoBuffer(
   const filepath = path.join(uploadsDir, filename);
   await writeFile(filepath, buffer);
 
-  return await addVideo({
+  const newVideo = await addVideo({
     ...baseVideo,
     public_id: filename,
     source: 'local',
@@ -115,5 +115,15 @@ export async function persistVideoBuffer(
     sourceUrl: `/uploads/${filename}`,
     url: `/api/videos/${baseVideo.id}/stream`,
     thumbnailUrl: '',
+    hlsStatus: mediaKind === 'video' ? 'pending' : null,
   });
+
+  if (mediaKind === 'video') {
+    // Fire and forget HLS transcoding
+    import('./hlsTranscoder.js').then(({ transcodeToHLS }) => {
+      transcodeToHLS(baseVideo.id, filepath).catch(console.error);
+    });
+  }
+
+  return newVideo;
 }
