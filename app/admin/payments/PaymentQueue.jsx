@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import Swal from 'sweetalert2';
 import { planLabelAr } from '@/app/lib/plans';
 
 function statusLabel(s) {
@@ -41,7 +42,7 @@ export default function PaymentQueue() {
     const res = await fetch(`/api/admin/payment-submissions/${id}/receipt-url`);
     const data = await res.json().catch(() => ({}));
     if (!res.ok || !data.url) {
-      alert(data.error || 'تعذّر فتح الإيصال.');
+      Swal.fire({ title: 'خطأ', text: data.error || 'تعذّر فتح الإيصال.', icon: 'error', confirmButtonText: 'حسناً', confirmButtonColor: '#FF5E1E' });
       return;
     }
     window.open(data.url, '_blank', 'noopener,noreferrer');

@@ -1,9 +1,6 @@
 'use client';
 import { useState, useRef, useCallback } from 'react';
 import Link from 'next/link';
-import VideoPreview from './VideoPreview';
-import ProgressBar from './ProgressBar';
-import ShareTools from './ShareTools';
 import { FREE_PUBLIC_MODE, MAX_VIDEO_BYTES_PER_UPLOAD } from '@/app/lib/plans';
 import { MEDIA_ACCEPT, MEDIA_FORMATS_AR, isAllowedMediaFile } from '@/app/lib/mediaTypes';
 import { LINK_TTL_OPTIONS } from '@/app/lib/linkTtl';
@@ -22,6 +19,7 @@ export default function VideoUpload({
   isLoggedIn = false,
   canUpload = false,
   maxUploadBytes = MAX_VIDEO_BYTES_PER_UPLOAD,
+  stats,
 }) {
   const effectiveCanUpload = FREE_PUBLIC_MODE ? true : canUpload;
   const effectiveIsLoggedIn = FREE_PUBLIC_MODE ? true : isLoggedIn;
@@ -31,9 +29,10 @@ export default function VideoUpload({
   const [lastUploaded, setLastUploaded] = useState(null);
   const [batchResults, setBatchResults] = useState([]);
   const [visibility, setVisibility] = useState('public');
-  const [linkTtl, setLinkTtl] = useState('never');
+  const [linkTtl, setLinkTtl] = useState('none');
   const [watermarkText, setWatermarkText] = useState('');
-  const [compressVideo, setCompressVideo] = useState(false);
+  const [compressVideo, setCompressVideo] = useState(true);
+  const [useWatermark, setUseWatermark] = useState(false);
   const [batchIndex, setBatchIndex] = useState(0);
   const [batchTotal, setBatchTotal] = useState(0);
   const inputRef = useRef(null);
@@ -61,12 +60,12 @@ export default function VideoUpload({
       if (compressVideo && file.type.startsWith('video/')) {
         prepared = await compressVideoFile(file);
       }
-      if (watermarkText.trim() && supportsWatermark(prepared)) {
+      if (useWatermark && watermarkText.trim() && supportsWatermark(prepared)) {
         prepared = await applyWatermarkToFile(prepared, { text: watermarkText });
       }
       return prepared;
     },
-    [compressVideo, watermarkText]
+    [compressVideo, useWatermark, watermarkText]
   );
 
   const handleFile = useCallback(
@@ -178,211 +177,297 @@ export default function VideoUpload({
   };
 
   const displayError = fileError || error;
-  const batchLabel = batchTotal > 0 ? ` (${batchIndex}/${batchTotal})` : '';
 
   return (
-    <div className="w-full">
-      {!FREE_PUBLIC_MODE && !isLoggedIn && (
-        <p className="mb-4 text-center text-amber-200/90 text-sm">
-          <Link href="/login" className="font-semibold underline hover:text-amber-100">
-            سجّل الدخول
-          </Link>{' '}
-          ثم اختر إحدى الباقات لتفعيل رفع الفيديوهات.
-        </p>
-      )}
-      {!FREE_PUBLIC_MODE && isLoggedIn && !canUpload && (
-        <p className="mb-4 text-center text-amber-200/90 text-sm">
-          لا يوجد رصيد متاح للرفع.{' '}
-          <Link href="/pricing" className="font-semibold underline hover:text-amber-100">
-            اختر باقة مناسبة
-          </Link>{' '}
-          (١٠ / ٢٥ / ٥٠ ر.س).
-        </p>
-      )}
-      {FREE_PUBLIC_MODE && (
-        <p className="mb-4 text-center text-emerald-200/85 text-sm">
-          الرفع متاح للجميع مجاناً. حتى {maxMbRounded} ميجابايت — رفع حتى {MAX_BATCH_FILES} ملفات دفعة واحدة.
-        </p>
-      )}
-
-      <div
-        onDragOver={(e) => {
-          if (!effectiveCanUpload) return;
-          e.preventDefault();
-          setDragOver(true);
-        }}
-        onDragLeave={() => setDragOver(false)}
-        onDrop={onDrop}
-        onClick={() => effectiveCanUpload && !loading && inputRef.current?.click()}
-        className={`relative rounded-2xl border-2 border-dashed p-10 text-center transition-all duration-300
-          ${dragOver ? 'border-indigo-400 bg-indigo-500/10 scale-[1.01]' : 'border-white/20 bg-white/5 hover:border-indigo-500/50 hover:bg-white/10'}
-          ${loading ? 'pointer-events-none opacity-70' : ''}
-          ${!effectiveCanUpload ? 'cursor-not-allowed opacity-55 pointer-events-none' : 'cursor-pointer hover:bg-white/10'}
-        `}
-      >
-        <input
-          ref={inputRef}
-          type="file"
-          accept={MEDIA_ACCEPT}
-          multiple
-          className="hidden"
-          onChange={onInputChange}
-          disabled={loading || !effectiveCanUpload}
-        />
-        <div className="flex flex-col items-center gap-3">
-          <div
-            className={`w-16 h-16 rounded-2xl flex items-center justify-center transition-all duration-300 ${dragOver ? 'bg-indigo-500/30 scale-110' : 'bg-white/10'}`}
-          >
-            {loading ? (
-              <svg className="w-8 h-8 text-indigo-400 animate-spin" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-              </svg>
-            ) : (
-              <svg className="w-8 h-8 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={1.5}
-                  d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                />
-              </svg>
-            )}
+    <div className="max-w-6xl mx-auto flex flex-col gap-space-xl">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-space-sm">
+        <div>
+          <div className="inline-flex items-center gap-space-xs bg-warm-surface px-space-sm py-space-xs rounded-lg text-primary-container font-label-md text-label-md mb-space-xs">
+            <span className="material-symbols-outlined text-[16px]">tune</span>
+            <span>مركز الإعدادات المتقدمة</span>
           </div>
-          <div>
-            <p className="text-white font-semibold text-lg">
+          <h2 className="font-headline-xl text-headline-xl text-on-surface">منطقة الرفع المجانية الذكية</h2>
+          <p className="font-body-md text-body-md text-on-surface-variant">حتى ٥٠ ميجابايت لكل ملف — ارفع فيديوهات وصور مباشرة بدون تسجيل مع خيارات تشفير فورية</p>
+        </div>
+        <div className="flex items-center gap-space-md bg-surface-container-lowest p-space-sm rounded-xl shadow-sm">
+          <div className="text-center px-space-sm">
+            <div className="font-headline-sm text-headline-sm text-on-surface">{stats?.totalVideos || 0}</div>
+            <div className="font-label-md text-label-md text-on-surface-variant">ملفات جاهزة</div>
+          </div>
+          <div className="w-px h-6 bg-surface-container"></div>
+          <div className="text-center px-space-sm">
+            <div className="font-headline-sm text-headline-sm text-primary-container">{loading ? `${Math.round(progress)}%` : '0%'}</div>
+            <div className="font-label-md text-label-md text-on-surface-variant">المعالجة الحالية</div>
+          </div>
+          <div className="w-px h-6 bg-surface-container"></div>
+          <div className="text-center px-space-sm">
+            <div className="font-headline-sm text-headline-sm text-success-green">مجاني</div>
+            <div className="font-label-md text-label-md text-on-surface-variant">سرعة الرفع</div>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-space-lg items-start">
+        <div className="lg:col-span-7 flex flex-col gap-space-md">
+          <div
+            onDragOver={(e) => {
+              if (!effectiveCanUpload) return;
+              e.preventDefault();
+              setDragOver(true);
+            }}
+            onDragLeave={() => setDragOver(false)}
+            onDrop={onDrop}
+            onClick={() => effectiveCanUpload && !loading && inputRef.current?.click()}
+            className={`relative group bg-surface-container-lowest rounded-xl p-space-2xl text-center shadow-sm cursor-pointer transition-all duration-300 hover:shadow-md flex flex-col items-center justify-center min-h-[360px] ${dragOver ? 'bg-warm-surface scale-[1.01]' : ''} ${loading || !effectiveCanUpload ? 'pointer-events-none opacity-80' : ''}`}
+            id="dropzone"
+          >
+            <input
+              ref={inputRef}
+              type="file"
+              accept={MEDIA_ACCEPT}
+              multiple
+              className="hidden"
+              onChange={onInputChange}
+              disabled={loading || !effectiveCanUpload}
+            />
+            <div className="absolute inset-0 bg-gradient-to-b from-primary-container/5 via-transparent to-transparent pointer-events-none rounded-xl"></div>
+            
+            <div className={`w-20 h-20 rounded-full bg-warm-surface flex items-center justify-center mb-space-lg shadow-[0_8px_24px_-4px_rgba(255,94,30,0.25)] transition-transform duration-300 ${dragOver ? 'scale-110' : 'group-hover:scale-105'}`}>
+              <span className={`material-symbols-outlined text-[44px] ${loading ? 'text-primary animate-spin' : 'text-primary-container'}`}>
+                {loading ? 'autorenew' : 'cloud_upload'}
+              </span>
+            </div>
+            
+            <h3 className="font-headline-lg text-headline-lg text-on-surface mb-space-xs font-bold">
               {loading
-                ? `جاري الرفع${batchLabel}…`
+                ? `جاري الرفع${batchTotal > 0 ? ' (' + batchIndex + '/' + batchTotal + ')' : ''}…`
                 : !effectiveCanUpload
-                  ? !effectiveIsLoggedIn
-                    ? 'سجّل الدخول واختر باقة لبدء الرفع'
-                    : 'لا يوجد رصيد — اختر باقة من صفحة الأسعار'
+                  ? 'سجّل الدخول لبدء الرفع'
                   : dragOver
                     ? 'أفلِت الملفات هنا'
                     : 'اسحب ملفات (حتى 10) وأفلِتها هنا'}
+            </h3>
+            <p className="font-body-md text-body-md text-on-surface-variant max-w-md mx-auto mb-space-lg">
+              أو انقر للاختيار — يدعم MP4 أو WebM أو MOV أو JPG أو PNG أو WebP أو GIF أو SVG، حتى 50 ميجابايت
             </p>
-            <p className="text-white/40 text-sm mt-1">
-              {loading
-                ? 'يرجى الانتظار حتى يكتمل الرفع'
-                : `أو انقر للاختيار — ${MEDIA_FORMATS_AR}، حتى ${maxMbRounded} ميجابايت`}
-            </p>
+            
+            <div className="flex flex-wrap items-center justify-center gap-space-sm relative z-10">
+              <button 
+                type="button" 
+                onClick={(e) => { e.stopPropagation(); inputRef.current?.click(); }}
+                disabled={loading || !effectiveCanUpload}
+                className="inline-flex items-center gap-space-xs bg-primary-container hover:bg-primary text-on-primary font-headline-sm text-headline-sm px-space-lg py-space-sm rounded-xl shadow-[0_8px_24px_-4px_rgba(255,94,30,0.35)] transition-all disabled:opacity-50"
+              >
+                <span className="material-symbols-outlined text-[20px]">file_open</span>
+                <span>تصفح جهازك</span>
+              </button>
+              <button 
+                type="button"
+                onClick={(e) => { e.stopPropagation(); cameraRef.current?.click(); }}
+                disabled={loading || !effectiveCanUpload}
+                className="inline-flex items-center gap-space-xs bg-surface-container hover:bg-surface-container-high text-on-surface font-headline-sm text-headline-sm px-space-lg py-space-sm rounded-xl transition-all disabled:opacity-50"
+              >
+                <span className="material-symbols-outlined text-primary-container text-[20px]">photo_camera</span>
+                <span>التقاط من الكاميرا</span>
+              </button>
+              <input
+                ref={cameraRef}
+                type="file"
+                accept="image/*,video/*"
+                capture="environment"
+                className="hidden"
+                onChange={onCameraChange}
+                disabled={loading || !effectiveCanUpload}
+              />
+            </div>
+
+            <div className="mt-space-xl flex flex-wrap justify-center items-center gap-space-xs">
+              <span className="bg-surface-container px-space-sm py-space-xs rounded-lg font-code-badge text-code-badge text-on-surface-variant font-bold">MP4</span>
+              <span className="bg-surface-container px-space-sm py-space-xs rounded-lg font-code-badge text-code-badge text-on-surface-variant font-bold">WEBM</span>
+              <span className="bg-surface-container px-space-sm py-space-xs rounded-lg font-code-badge text-code-badge text-on-surface-variant font-bold">MOV</span>
+              <span className="bg-surface-container px-space-sm py-space-xs rounded-lg font-code-badge text-code-badge text-on-surface-variant font-bold">PNG</span>
+              <span className="bg-surface-container px-space-sm py-space-xs rounded-lg font-code-badge text-code-badge text-on-surface-variant font-bold">JPG</span>
+              <span className="bg-surface-container px-space-sm py-space-xs rounded-lg font-code-badge text-code-badge text-on-surface-variant font-bold">WEBP</span>
+            </div>
           </div>
+
+          {displayError && (
+            <div className="bg-error-container p-space-md rounded-xl text-error font-body-sm text-body-sm shadow-sm flex items-center gap-2">
+              <span className="material-symbols-outlined">error</span>
+              {displayError}
+            </div>
+          )}
+
+          {loading && selectedFile && (
+            <div className="bg-surface-container-lowest p-space-lg rounded-xl shadow-sm">
+              <div className="flex items-center justify-between mb-space-sm">
+                <div className="flex items-center gap-space-sm">
+                  <div className="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center">
+                    <span className="material-symbols-outlined text-primary-container text-[24px]">videocam</span>
+                  </div>
+                  <div className="flex-1 overflow-hidden">
+                    <h4 className="font-headline-sm text-headline-sm text-on-surface truncate">{selectedFile.name}</h4>
+                    <p className="font-body-sm text-body-sm text-on-surface-variant">{(selectedFile.size / (1024 * 1024)).toFixed(1)} MB • جاري المعالجة...</p>
+                  </div>
+                </div>
+                <div className="text-left">
+                  <span className="font-headline-sm text-headline-sm text-primary-container font-bold">{Math.round(progress)}%</span>
+                </div>
+              </div>
+              <div className="w-full bg-surface-container h-2 rounded-full overflow-hidden mb-space-sm">
+                <div className="bg-primary-container h-full rounded-full transition-all duration-300" style={{ width: `${progress}%` }}></div>
+              </div>
+              <div className="flex items-center justify-between text-on-surface-variant font-body-sm text-body-sm">
+                <div className="flex items-center gap-space-xs">
+                  <span className="material-symbols-outlined text-success-green text-[18px]">verified</span>
+                  <span className="text-success-green font-semibold">يتم معالجة الملف</span>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {lastUploaded && (
+            <div className="bg-surface-container-lowest p-space-lg rounded-xl shadow-sm border border-success-green/20">
+              <div className="flex items-center justify-between mb-space-md">
+                <div className="flex items-center gap-space-sm">
+                  <div className="w-10 h-10 rounded-lg bg-success-green/10 flex items-center justify-center">
+                    <span className="material-symbols-outlined text-success-green text-[24px]">check_circle</span>
+                  </div>
+                  <div>
+                    <h4 className="font-headline-sm text-headline-sm text-on-surface">اكتمل الرفع</h4>
+                    <p className="font-body-sm text-body-sm text-on-surface-variant">تم حفظ الملف وتأمين الرابط</p>
+                  </div>
+                </div>
+                <button onClick={() => onCopy(lastUploaded.shortUrl || lastUploaded.url)} className="text-primary-container hover:text-primary transition-colors flex items-center gap-space-xs font-label-md">
+                  <span className="material-symbols-outlined text-[18px]">content_copy</span> نسخ الرابط
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="lg:col-span-5 flex flex-col gap-space-md">
+          <div className="bg-surface-container-lowest p-space-lg rounded-xl shadow-sm flex flex-col gap-space-lg">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-space-xs">
+                <span className="material-symbols-outlined text-primary-container text-[20px]">admin_panel_settings</span>
+                <h3 className="font-headline-sm text-headline-sm text-on-surface font-bold">خيارات الخصوصية والأمان</h3>
+              </div>
+              <span className="bg-warm-surface text-primary-container font-label-md text-label-md px-space-sm py-space-xs rounded-lg font-bold">تحكم كامل</span>
+            </div>
+            
+            <div className="flex flex-col gap-space-xs">
+              <label className="font-label-lg text-label-lg text-on-surface font-bold">مستوى الظهور</label>
+              <div className="grid grid-cols-3 gap-space-xs bg-surface-container p-space-xs rounded-xl">
+                <button 
+                  onClick={() => setVisibility('public')}
+                  className={`py-space-xs px-space-xs rounded-lg text-center font-label-md text-label-md transition-colors ${visibility === 'public' ? 'bg-surface-container-lowest text-on-surface font-bold shadow-sm' : 'text-on-surface-variant hover:text-on-surface'}`} 
+                  type="button"
+                >
+                  عام للجميع
+                </button>
+                <button 
+                  onClick={() => setVisibility('unlisted')}
+                  className={`py-space-xs px-space-xs rounded-lg text-center font-label-md text-label-md transition-colors ${visibility === 'unlisted' ? 'bg-surface-container-lowest text-on-surface font-bold shadow-sm' : 'text-on-surface-variant hover:text-on-surface'}`} 
+                  type="button"
+                >
+                  غير مُدرَج
+                </button>
+                <button 
+                  onClick={() => setVisibility('private')}
+                  className={`py-space-xs px-space-xs rounded-lg text-center font-label-md text-label-md flex items-center justify-center gap-space-xs transition-colors ${visibility === 'private' ? 'bg-surface-container-lowest text-on-surface font-bold shadow-sm' : 'text-on-surface-variant hover:text-on-surface'}`} 
+                  type="button"
+                >
+                  <span className="material-symbols-outlined text-[14px]">lock</span>
+                  <span>رمز PIN</span>
+                </button>
+              </div>
+              <p className="font-body-sm text-body-sm text-on-surface-variant">غير مدرج: لا يظهر بالبحث أو القوائم، فقط لمن يمتلك الرابط الحصري.</p>
+            </div>
+
+            <div className="flex flex-col gap-space-xs">
+              <label className="font-label-lg text-label-lg text-on-surface font-bold">مدة صلاحية الرابط</label>
+              <div className="relative">
+                <select 
+                  value={linkTtl}
+                  onChange={(e) => setLinkTtl(e.target.value)}
+                  className="w-full h-11 px-space-md bg-surface-container text-on-surface rounded-xl font-body-md text-body-md appearance-none focus:outline-none focus:bg-surface-container-high transition-colors cursor-pointer"
+                >
+                  <option value="never">بدون انتهاء صلاحية (دائم)</option>
+                  <option value="7d">أسبوع واحد (7 أيام)</option>
+                  <option value="1d">يوم واحد (24 ساعة)</option>
+                  <option value="1h">ساعة واحدة فقط</option>
+                </select>
+                <div className="absolute left-space-md top-1/2 -translate-y-1/2 pointer-events-none text-on-surface-variant flex items-center">
+                  <span className="material-symbols-outlined text-[20px]">expand_more</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-space-md pt-space-xs">
+              <div className="flex flex-col gap-2 p-space-sm bg-surface-container rounded-xl">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-space-sm">
+                    <span className="material-symbols-outlined text-primary-container text-[20px]">branding_watermark</span>
+                    <div>
+                      <div className="font-label-lg text-label-lg text-on-surface font-semibold">علامة مائية Themiify</div>
+                      <div className="font-body-sm text-body-sm text-on-surface-variant">حماية حقوق الصور الترويجية</div>
+                    </div>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" checked={useWatermark} onChange={(e) => setUseWatermark(e.target.checked)} className="sr-only peer" />
+                    <div className="w-11 h-6 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-container"></div>
+                  </label>
+                </div>
+                {useWatermark && (
+                  <input
+                    type="text"
+                    value={watermarkText}
+                    onChange={(e) => setWatermarkText(e.target.value)}
+                    placeholder="نص العلامة المائية"
+                    className="w-full mt-2 rounded-lg bg-surface-container-lowest px-3 py-2 text-sm text-on-surface outline-none border border-surface-container-highest focus:border-primary-container transition-colors"
+                  />
+                )}
+              </div>
+
+              <div className="flex items-center justify-between p-space-sm bg-surface-container rounded-xl">
+                <div className="flex items-center gap-space-sm">
+                  <span className="material-symbols-outlined text-primary-container text-[20px]">auto_fix_high</span>
+                  <div>
+                    <div className="font-label-lg text-label-lg text-on-surface font-semibold">ضغط الفيديو الذكي قبل الرفع</div>
+                    <div className="font-body-sm text-body-sm text-on-surface-variant">يقلل الحجم 65% مع الحفاظ على الجودة 4K</div>
+                  </div>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input type="checkbox" checked={compressVideo} onChange={(e) => setCompressVideo(e.target.checked)} className="sr-only peer" />
+                  <div className="w-11 h-6 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-container"></div>
+                </label>
+              </div>
+            </div>
+
+            <div className="bg-warm-surface p-space-md rounded-xl flex items-start gap-space-sm">
+              <span className="material-symbols-outlined text-primary-container text-[22px] shrink-0">info</span>
+              <p className="font-body-sm text-body-sm text-on-surface-variant">
+                سيرفراتنا لا تشارك أي بيانات، والملفات المرفوعة تخضع لنظام الحذف التلقائي الآمن وفق اختيارك.
+              </p>
+            </div>
+          </div>
+
+          {stats && (
+            <div className="bg-surface-container-lowest p-space-md rounded-xl shadow-sm flex items-center justify-around text-center">
+              <div>
+                <span className="font-label-md text-label-md text-on-surface-variant block">إجمالي الملفات</span>
+                <span className="font-headline-md text-headline-md text-on-surface font-bold">{stats.totalVideos || 0}</span>
+              </div>
+              <div className="w-px h-8 bg-surface-container"></div>
+              <div>
+                <span className="font-label-md text-label-md text-on-surface-variant block">المشاهدات النشطة</span>
+                <span className="font-headline-md text-headline-md text-primary-container font-bold">{stats.totalViews || 0}</span>
+              </div>
+            </div>
+          )}
         </div>
       </div>
-
-      <div className="mt-3 flex flex-wrap gap-2 justify-center">
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            cameraRef.current?.click();
-          }}
-          disabled={loading || !effectiveCanUpload}
-          className="text-xs px-4 py-2 rounded-xl bg-cyan-500/15 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/25 transition disabled:opacity-40"
-        >
-          📷 التقاط من الكاميرا
-        </button>
-        <input
-          ref={cameraRef}
-          type="file"
-          accept="image/*,video/*"
-          capture="environment"
-          className="hidden"
-          onChange={onCameraChange}
-          disabled={loading || !effectiveCanUpload}
-        />
-      </div>
-
-      {loading && <ProgressBar progress={progress} />}
-
-      <div className="mt-4 grid gap-3 sm:grid-cols-2">
-        <div className="flex items-center gap-3">
-          <label className="text-sm text-white/70 shrink-0">مستوى الظهور</label>
-          <select
-            value={visibility}
-            onChange={(e) => setVisibility(e.target.value)}
-            disabled={loading || !effectiveCanUpload}
-            className="flex-1 rounded-lg bg-white/10 border border-white/20 px-3 py-2 text-sm text-white outline-none"
-          >
-            <option value="public" className="text-black">
-              عام — متاح للجميع
-            </option>
-            <option value="private" className="text-black">
-              خاص — برمز وصول فقط
-            </option>
-            <option value="unlisted" className="text-black">
-              غير مُدرَج — لمن يملك الرابط فقط
-            </option>
-          </select>
-        </div>
-        <div className="flex items-center gap-3">
-          <label className="text-sm text-white/70 shrink-0">انتهاء الرابط</label>
-          <select
-            value={linkTtl}
-            onChange={(e) => setLinkTtl(e.target.value)}
-            disabled={loading || !effectiveCanUpload}
-            className="flex-1 rounded-lg bg-white/10 border border-white/20 px-3 py-2 text-sm text-white outline-none"
-          >
-            {LINK_TTL_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value} className="text-black">
-                {opt.labelAr}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      <div className="mt-3 grid gap-3 sm:grid-cols-2">
-        <div>
-          <label className="text-sm text-white/70 block mb-1">علامة مائية (اختياري — للصور)</label>
-          <input
-            type="text"
-            value={watermarkText}
-            onChange={(e) => setWatermarkText(e.target.value)}
-            placeholder="مثال: اسم المحل أو البراند"
-            disabled={loading || !effectiveCanUpload}
-            className="w-full rounded-lg bg-white/10 border border-white/20 px-3 py-2 text-sm text-white placeholder:text-white/30 outline-none"
-          />
-        </div>
-        <label className="flex items-center gap-2 text-sm text-white/70 cursor-pointer mt-6 sm:mt-0 sm:items-end sm:pb-2">
-          <input
-            type="checkbox"
-            checked={compressVideo}
-            onChange={(e) => setCompressVideo(e.target.checked)}
-            disabled={loading || !effectiveCanUpload}
-            className="rounded"
-          />
-          ضغط الفيديو قبل الرفع (يوفّر بيانات الموبايل)
-        </label>
-      </div>
-
-      {displayError && (
-        <div className="mt-3 flex items-center gap-2 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
-          <svg className="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-            <path
-              fillRule="evenodd"
-              d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-              clipRule="evenodd"
-            />
-          </svg>
-          {displayError}
-        </div>
-      )}
-
-      {selectedFile && !loading && <VideoPreview file={selectedFile} />}
-
-      {lastUploaded && (
-        <div className="mt-4 px-4 py-3 rounded-xl bg-green-500/10 border border-green-500/20">
-          <p className="text-green-400 text-sm font-medium">
-            {batchResults.length > 1
-              ? `اكتمل رفع ${batchResults.length} ملفات`
-              : lastUploaded.mediaKind === 'image' || lastUploaded.mimeType?.startsWith('image/')
-                ? 'اكتمل رفع الصورة'
-                : 'اكتمل رفع الفيديو'}
-          </p>
-          <ShareTools item={lastUploaded} onCopy={onCopy} />
-        </div>
-      )}
     </div>
   );
 }

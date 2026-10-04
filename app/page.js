@@ -1,19 +1,16 @@
 'use client';
 import { useState, useCallback, useEffect } from 'react';
 import dynamic from 'next/dynamic';
-import { motion } from 'framer-motion';
+import Link from 'next/link';
 import VideoUpload from './components/VideoUpload';
-import VideoGallery from './components/VideoGallery';
-import AppNavbar from './components/AppNavbar';
 import { useVideoUpload } from './hooks/useVideoUpload';
 import { useAuth } from './providers/AuthProvider';
 import { MAX_VIDEO_BYTES_PER_UPLOAD } from '@/app/lib/plans';
 import { getAttributionFromLocation, trackFunnelEvent } from '@/app/lib/analytics/funnel';
-import { CinematicCard, CinematicSection, FloatOrb } from './components/ui/CinematicSection';
 
-  const MediaLab = dynamic(() => import('./components/MediaLab'), {
+const MediaLab = dynamic(() => import('./components/MediaLab'), {
   loading: () => (
-    <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-white/60">
+    <div className="rounded-2xl bg-surface-container-low p-4 text-sm text-on-surface-variant flex justify-center items-center h-64">
       جاري تحميل الأدوات الإضافية…
     </div>
   ),
@@ -27,8 +24,8 @@ function Toast({ toasts }) {
           key={t.id}
           className={`px-4 py-3 rounded-xl shadow-xl text-sm font-medium border backdrop-blur animate-fade-in transition-all
             ${t.type === 'success'
-              ? 'bg-green-900/80 border-green-500/40 text-green-300'
-              : 'bg-red-900/80 border-red-500/40 text-red-300'}`}
+              ? 'bg-success-green/20 border-success-green/40 text-success-green'
+              : 'bg-error-container border-error/40 text-error'}`}
         >
           {t.message}
         </div>
@@ -43,18 +40,10 @@ export default function HomePage() {
     upload,
     progress,
     loading,
-    loadingList,
     error,
     uploadedVideos,
     stats,
-    pagination,
-    setPage,
-    trackView,
-    listScope,
     setListScope,
-    activeMediaTab,
-    setActiveMediaTab,
-    tabCounts,
   } = useVideoUpload();
   const [toasts, setToasts] = useState([]);
   const [showMediaLab, setShowMediaLab] = useState(false);
@@ -84,7 +73,7 @@ export default function HomePage() {
     const baseUrl = (() => {
       const { protocol, hostname, port } = window.location;
       const safeHost = hostname === '0.0.0.0' ? 'localhost' : hostname;
-      return `${protocol}//${safeHost}${port ? `:${port}` : ''}`;
+      return `${protocol}//${safeHost}${port ? ':' + port : ''}`;
     })();
     let fullUrl = url.startsWith('http') ? url : baseUrl + url;
     try {
@@ -95,178 +84,250 @@ export default function HomePage() {
         if (!parsed.port && window.location.port) parsed.port = window.location.port;
         fullUrl = parsed.toString();
       }
-    } catch {
-      // Keep original URL if parsing fails.
-    }
+    } catch { }
     navigator.clipboard.writeText(fullUrl)
       .then(() => showToast('تم نسخ الرابط إلى الحافظة بنجاح', 'success'))
       .catch(() => showToast('تعذّر نسخ الرابط، حاول مرة أخرى.', 'error'));
   }, [showToast]);
 
   return (
-    <main className="min-h-screen text-white">
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <FloatOrb className="absolute -top-36 -start-12 h-[28rem] w-[28rem] rounded-full bg-indigo-500/20 blur-[100px]" />
-        <FloatOrb className="absolute top-1/3 -end-12 h-[24rem] w-[24rem] rounded-full bg-cyan-400/20 blur-[90px]" />
-      </div>
-
-      <div className="relative section-wrap py-10 sm:py-14">
-        <AppNavbar />
-
-        <CinematicSection className="text-center mb-12 sm:mb-16" y={24}>
-          <div className="chip mb-5">
-            <span className="text-base" aria-hidden>
-              ✨
-            </span>
-            مجاني للجميع — بدون تسجيل ولا حساب
+    <>
+      <header className="fixed top-0 left-0 right-0 z-50 bg-surface/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(14,19,44,0.06)]">
+        <div className="h-16 w-full px-gutter flex items-center justify-between gap-space-md">
+          <div className="flex items-center gap-space-lg">
+            <div className="flex items-center gap-space-sm">
+              <img alt="Themiify Official Logo" className="h-8 w-auto object-contain" src="/icon.svg" />
+              <span className="font-headline-sm text-headline-sm font-bold tracking-tight text-on-surface">Themiify <span className="text-primary-container">Videos</span></span>
+            </div>
+            <div className="hidden xl:flex items-center gap-space-xs bg-warm-surface px-space-sm py-space-xs rounded-xl shadow-[0_1px_4px_rgba(255,94,30,0.1)]">
+              <span className="material-symbols-outlined text-primary-container text-[18px]">verified</span>
+              <span className="font-label-md text-label-md text-primary-container font-semibold">مجاني للجميع — بدون تسجيل ولا حساب</span>
+            </div>
           </div>
-          <h1 className="headline-display bg-gradient-to-b from-white via-indigo-100 to-indigo-300 bg-clip-text text-transparent">
-            ارفع فيديوهاتك وصورك مجاناً
-          </h1>
-          <p className="mt-5 text-base sm:text-lg text-muted max-w-2xl mx-auto leading-relaxed">
-            ارفع فيديوهات وصور مباشرة دون تسجيل. ملفاتك خاصة بك فقط — لا يراها زوار آخرون، ولا تظهر أي مكتبة عند فتح الموقع.
-          </p>
-          <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
-            <a href="#upload-zone" className="btn-primary">
-              ابدأ الرفع الآن
+          <nav className="hidden lg:flex items-center gap-space-sm">
+            <Link href="/" className="px-space-md py-space-xs transition-colors bg-surface-container text-on-surface font-semibold rounded-xl">الرئيسية والرفع</Link>
+            <Link href="/dashboard" className="px-space-md py-space-xs rounded-xl font-label-lg text-label-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors">إدارة المرفوعات والمكتبة</Link>
+            <Link href="/tools" className="px-space-md py-space-xs rounded-xl font-label-lg text-label-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors">أدوات الميديا</Link>
+          </nav>
+          <div className="flex items-center gap-space-md">
+            <a href="#upload-zone" className="inline-flex items-center gap-space-xs bg-primary-container text-on-primary hover:bg-primary font-headline-sm text-headline-sm px-space-md py-space-xs rounded-xl shadow-[0_8px_24px_-4px_rgba(255,94,30,0.35)] transition-all">
+              <span className="material-symbols-outlined text-[20px]">cloud_upload</span>
+              <span>ارفع ملفاً الآن</span>
             </a>
           </div>
-          <div className="mt-5 flex flex-wrap justify-center gap-2">
-            <span className="chip">بدون تسجيل دخول</span>
-            <span className="chip">فيديو وصور</span>
-            <span className="chip">ملفاتك خاصة بك</span>
-            <span className="chip">روابط مشاركة آمنة</span>
-          </div>
-        </CinematicSection>
+        </div>
+      </header>
 
-        <CinematicSection className="mb-10 grid gap-4 sm:grid-cols-3" delay={0.1}>
-          <CinematicCard className="p-5 text-sm">
-            <p className="text-emerald-200 font-semibold mb-2">١. اختر ملفك</p>
-            <p className="text-white/60">اسحب فيديو أو صورة وأفلِته في منطقة الرفع، أو انقر للاختيار من جهازك.</p>
-          </CinematicCard>
-          <CinematicCard className="p-5 text-sm">
-            <p className="text-indigo-200 font-semibold mb-2">٢. ارفع الملف</p>
-            <p className="text-white/60">يُحفظ الملف في جلسة متصفّحك فقط — لن يراه أي زائر آخر على الموقع.</p>
-          </CinematicCard>
-          <CinematicCard className="p-5 text-sm">
-            <p className="text-amber-200 font-semibold mb-2">٣. شارك الرابط</p>
-            <p className="text-white/60">انسخ رابط المشاركة لإرساله لمن تريد — بدون رابط لن يستطيع أحد مشاهدة الملف.</p>
-          </CinematicCard>
-        </CinematicSection>
-
-        <CinematicSection delay={0.1}>
-          <div id="upload-zone" className="glass-panel p-6 sm:p-8 scroll-mt-24">
-            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-              <h2 className="text-xl font-semibold">منطقة الرفع المجانية</h2>
-              <span className="chip">حتى ٥٠ ميجابايت لكل ملف</span>
-            </div>
-            <p className="text-sm text-white/60 mb-5">
-              ارفع فيديوهات وصور مباشرة بدون تسجيل، مع شريط تقدّم مباشر وروابط مشاركة آمنة.
-            </p>
-          <VideoUpload
-            onUpload={upload}
-            loading={loading}
-            progress={progress}
-            error={error}
-            onToast={showToast}
-            onCopy={handleCopy}
-            isLoggedIn={Boolean(user)}
-            canUpload={Boolean(user) && Boolean(quota?.uploadAllowed)}
-            maxUploadBytes={quota?.maxUploadBytes ?? MAX_VIDEO_BYTES_PER_UPLOAD}
-          />
-          </div>
-        </CinematicSection>
-
-        {stats && stats.totalVideos > 0 && (
-          <CinematicSection className="mt-6 space-y-4" delay={0.1}>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <motion.div whileHover={{ y: -2 }} className="glass-panel p-4 rounded-xl border">
-                <p className="text-xs text-white/50">إجمالي الملفات</p>
-                <p className="text-xl font-bold tabular-nums">{stats.totalVideos}</p>
-              </motion.div>
-              <motion.div whileHover={{ y: -2 }} className="glass-panel p-4 rounded-xl border">
-                <p className="text-xs text-white/50">فيديو / صورة</p>
-                <p className="text-xl font-bold tabular-nums">
-                  {stats.totalVideoFiles ?? 0} / {stats.totalImageFiles ?? 0}
-                </p>
-              </motion.div>
-              <motion.div whileHover={{ y: -2 }} className="glass-panel p-4 rounded-xl border">
-                <p className="text-xs text-white/50">إجمالي المشاهدات</p>
-                <p className="text-xl font-bold tabular-nums">{stats.totalViews}</p>
-              </motion.div>
-              <motion.div whileHover={{ y: -2 }} className="glass-panel p-4 rounded-xl border">
-                <p className="text-xs text-white/50">خاصة وغير مُدرَجة</p>
-                <p className="text-xl font-bold tabular-nums">
-                  {stats.byVisibility.private + stats.byVisibility.unlisted}
-                </p>
-              </motion.div>
-            </div>
-            {Array.isArray(stats.recentViews) && stats.recentViews.length > 0 && (
-              <div className="glass-panel p-4 rounded-xl border">
-                <p className="text-xs text-white/50 mb-3">آخر المشاهدات</p>
-                <ul className="space-y-2 text-sm">
-                  {stats.recentViews.map((item) => (
-                    <li key={item.id} className="flex justify-between gap-3 text-white/70">
-                      <span className="truncate">
-                        {item.mediaKind === 'image' ? '🖼️' : '🎬'} {item.name}
-                      </span>
-                      <span className="text-white/40 text-xs shrink-0 tabular-nums">
-                        {item.views} ·{' '}
-                        {new Date(item.lastViewedAt).toLocaleString('ar-SA', {
-                          dateStyle: 'short',
-                          timeStyle: 'short',
-                        })}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
+      <main className="w-full pt-16 bg-surface min-h-[calc(100vh-16rem)]">
+        <div className="flex flex-col w-full">
+          <div className="relative w-full overflow-hidden">
+            <div className="absolute top-0 right-1/4 w-96 h-96 bg-primary-container/10 rounded-full blur-3xl pointer-events-none -z-10"></div>
+            <div className="absolute top-72 left-1/6 w-80 h-80 bg-primary/10 rounded-full blur-3xl pointer-events-none -z-10"></div>
+            
+            <section className="w-full px-gutter pt-space-lg pb-space-md">
+              <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-space-md bg-warm-surface p-space-md rounded-xl shadow-sm">
+                <div className="flex items-center gap-space-sm">
+                  <div className="w-10 h-10 rounded-lg bg-surface-container-lowest flex items-center justify-center shadow-sm">
+                    <img alt="Themiify Official Logo" className="w-7 h-7 object-contain" src="/icon.svg" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-space-xs">
+                      <span className="inline-block w-2 h-2 rounded-full bg-primary-container animate-pulse"></span>
+                      <span className="font-headline-sm text-headline-sm text-on-surface">خدمة الاستضافة السحابية الفورية من Themiify</span>
+                    </div>
+                    <p className="font-body-sm text-body-sm text-on-surface-variant">رفع وسائطك التقنية وإدارتها بدون حساب، آمنة ومحمية بالكامل بتكنولوجيا مشفرة</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-space-xs bg-surface-container-lowest px-space-md py-space-xs rounded-lg shadow-sm">
+                  <span className="material-symbols-outlined text-primary-container text-[20px]">bolt</span>
+                  <span className="font-label-md text-label-md text-primary-container font-bold">جاهز للإرسال الفوري • بدون قيود</span>
+                </div>
               </div>
-            )}
-          </CinematicSection>
-        )}
+            </section>
 
-        <CinematicSection delay={0.08}>
-          <VideoGallery
-            videos={uploadedVideos}
-            onCopy={handleCopy}
-            onTrackView={trackView}
-            pagination={pagination}
-            onPageChange={setPage}
-            loading={loadingList}
-            listScope={listScope}
-            onListScopeChange={setListScope}
-            sessionUser={user}
-            activeMediaTab={activeMediaTab}
-            onMediaTabChange={setActiveMediaTab}
-            tabCounts={tabCounts}
-          />
-        </CinematicSection>
+            <section className="w-full px-gutter py-space-xl text-center">
+              <div className="max-w-4xl mx-auto flex flex-col items-center">
+                <div className="inline-flex items-center gap-space-xs bg-surface-container-lowest px-space-md py-space-xs rounded-full shadow-sm mb-space-md">
+                  <span className="material-symbols-outlined text-primary-container text-[18px]">verified</span>
+                  <span className="font-label-lg text-label-lg text-on-surface font-semibold">✨ مجاني للجميع — بدون تسجيل ولا حساب</span>
+                </div>
+                <h1 className="font-display-hero text-display-hero text-on-surface mb-space-md tracking-tight">
+                  ارفع فيديوهاتك وصورك <span className="text-primary-container">مجاناً وفوراً</span>
+                </h1>
+                <p className="font-body-lg text-body-lg text-on-surface-variant max-w-2xl mx-auto mb-space-lg">
+                  ارفع فيديوهات وصور مباشرة دون تسجيل. ملفاتك خاصة بك فقط — لا يراها زوار آخرون، ولا تظهر أي مكتبة عند فتح الموقع، بأعلى سرعة نقل سحابية.
+                </p>
+                <div className="flex flex-wrap items-center justify-center gap-space-sm mb-space-xl">
+                  <div className="inline-flex items-center gap-space-xs bg-surface-container-lowest px-space-md py-space-xs rounded-lg shadow-sm">
+                    <span className="material-symbols-outlined text-primary-container text-[18px]">lock_open</span>
+                    <span className="font-label-md text-label-md text-on-surface font-semibold">بدون تسجيل دخول</span>
+                  </div>
+                  <div className="inline-flex items-center gap-space-xs bg-surface-container-lowest px-space-md py-space-xs rounded-lg shadow-sm">
+                    <span className="material-symbols-outlined text-primary-container text-[18px]">movie</span>
+                    <span className="font-label-md text-label-md text-on-surface font-semibold">فيديو وصور حتى 50MB</span>
+                  </div>
+                  <div className="inline-flex items-center gap-space-xs bg-surface-container-lowest px-space-md py-space-xs rounded-lg shadow-sm">
+                    <span className="material-symbols-outlined text-primary-container text-[18px]">shield</span>
+                    <span className="font-label-md text-label-md text-on-surface font-semibold">ملفاتك خاصة بك 100%</span>
+                  </div>
+                  <div className="inline-flex items-center gap-space-xs bg-surface-container-lowest px-space-md py-space-xs rounded-lg shadow-sm">
+                    <span className="material-symbols-outlined text-primary-container text-[18px]">share</span>
+                    <span className="font-label-md text-label-md text-on-surface font-semibold">روابط مشاركة آمنة وسريعة</span>
+                  </div>
+                </div>
+              </div>
+            </section>
 
-        <CinematicSection className="mt-14 border-t border-white/10 pt-10" delay={0.15}>
-          <h2 className="text-xl font-bold text-white mb-2 flex items-center gap-2">
-            <span className="text-2xl" aria-hidden>
-              ✨
-            </span>
-            أدوات مساعدة
-          </h2>
-          <p className="text-sm text-white/45 mb-6">
-            ضغط الصور واستخراج الصوت من الفيديو ضمن نفس الواجهة، بسرعة وبضغطة واحدة.
-          </p>
-          {showMediaLab ? (
-            <MediaLab onToast={showToast} onCopy={handleCopy} onUploaded={() => setPage(1)} />
-          ) : (
-            <button
-              type="button"
-              onClick={() => setShowMediaLab(true)}
-              className="btn-secondary"
-            >
-              فتح الأدوات المساعدة
-            </button>
-          )}
-        </CinematicSection>
-      </div>
+            <section className="w-full px-gutter pb-space-2xl">
+              <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-space-lg">
+                <div className="bg-surface-container-lowest p-space-lg rounded-xl shadow-sm relative overflow-hidden flex flex-col justify-between">
+                  <div className="flex items-center justify-between mb-space-md">
+                    <span className="font-headline-xl text-headline-xl text-primary-container/20">01</span>
+                    <div className="w-10 h-10 rounded-lg bg-warm-surface flex items-center justify-center">
+                      <span className="material-symbols-outlined text-primary-container text-[22px]">touch_app</span>
+                    </div>
+                  </div>
+                  <div>
+                    <h3 className="font-headline-md text-headline-md text-on-surface mb-space-xs">١. اختر ملفك</h3>
+                    <p className="font-body-md text-body-md text-on-surface-variant">
+                      اسحب فيديو أو صورة وأفلِته في منطقة الرفع، أو انقر للاختيار من جهازك فوراً.
+                    </p>
+                  </div>
+                </div>
+                <div className="bg-surface-container-lowest p-space-lg rounded-xl shadow-sm relative overflow-hidden flex flex-col justify-between">
+                  <div className="flex items-center justify-between mb-space-md">
+                    <span className="font-headline-xl text-headline-xl text-primary-container/20">02</span>
+                    <div className="w-10 h-10 rounded-lg bg-warm-surface flex items-center justify-center">
+                      <span className="material-symbols-outlined text-primary-container text-[22px]">security</span>
+                    </div>
+                  </div>
+                  <div>
+                    <h3 className="font-headline-md text-headline-md text-on-surface mb-space-xs">٢. ارفع الملف</h3>
+                    <p className="font-body-md text-body-md text-on-surface-variant">
+                      يُحفظ الملف في جلسة متصفّحك فقط — لن يراه أي زائر آخر على الموقع على الإطلاق.
+                    </p>
+                  </div>
+                </div>
+                <div className="bg-surface-container-lowest p-space-lg rounded-xl shadow-sm relative overflow-hidden flex flex-col justify-between">
+                  <div className="flex items-center justify-between mb-space-md">
+                    <span className="font-headline-xl text-headline-xl text-primary-container/20">03</span>
+                    <div className="w-10 h-10 rounded-lg bg-warm-surface flex items-center justify-center">
+                      <span className="material-symbols-outlined text-primary-container text-[22px]">link</span>
+                    </div>
+                  </div>
+                  <div>
+                    <h3 className="font-headline-md text-headline-md text-on-surface mb-space-xs">٣. شارك الرابط</h3>
+                    <p className="font-body-md text-body-md text-on-surface-variant">
+                      انسخ رابط المشاركة لإرساله لمن تريد — بدون رابط لن يستطيع أحد مشاهدة الملف.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </section>
 
+            <section id="upload-zone" className="w-full px-gutter pb-space-2xl scroll-mt-24">
+              <VideoUpload
+                onUpload={upload}
+                loading={loading}
+                progress={progress}
+                error={error}
+                onToast={showToast}
+                onCopy={handleCopy}
+                isLoggedIn={Boolean(user)}
+                canUpload={Boolean(user) && Boolean(quota?.uploadAllowed)}
+                maxUploadBytes={quota?.maxUploadBytes ?? MAX_VIDEO_BYTES_PER_UPLOAD}
+                stats={stats}
+              />
+            </section>
+
+            <section className="w-full px-gutter pb-space-2xl">
+              <div className="max-w-6xl mx-auto bg-charcoal-navy text-on-primary rounded-xl p-space-xl relative overflow-hidden shadow-xl">
+                <div className="absolute -right-20 -bottom-20 w-80 h-80 bg-primary-container/20 rounded-full blur-3xl pointer-events-none"></div>
+                <div className="absolute -left-20 -top-20 w-60 h-60 bg-primary/20 rounded-full blur-3xl pointer-events-none"></div>
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-space-xl items-center relative z-10">
+                  <div className="lg:col-span-7 flex flex-col gap-space-md">
+                    <div className="inline-flex items-center gap-space-xs bg-white/10 px-space-md py-space-xs rounded-full w-fit">
+                      <span className="material-symbols-outlined text-primary-container text-[18px]">verified</span>
+                      <span className="font-label-md text-label-md text-white font-semibold">بنية تحتية لمتاجر Themiify و زد وسلة</span>
+                    </div>
+                    <h2 className="font-headline-xl text-headline-xl text-white font-bold leading-tight">
+                      أسرع مشغل فيديو مدمج لصفحات الهبوط وزيادة المبيعات
+                    </h2>
+                    <p className="font-body-md text-body-md text-gray-300">
+                      ارفع مقاطع الريلز، تجارب العملاء وفيديوهات استعراض المنتجات بدون أن تبطئ متجرك الإلكتروني ثانية واحدة. تخلص من إعلانات يوتيوب الخارجية واستمتع بروابط استضافة نقية 100%.
+                    </p>
+                    <div className="flex flex-wrap items-center gap-space-md pt-space-xs">
+                      <Link href="/tools" className="inline-flex items-center gap-space-xs bg-primary-container hover:bg-primary text-on-primary font-headline-sm text-headline-sm px-space-lg py-space-sm rounded-xl shadow-[0_8px_24px_-4px_rgba(255,94,30,0.35)] transition-all">
+                        <span className="material-symbols-outlined text-[20px]">construction</span>
+                        <span>استكشف أدوات الميديا الذكية</span>
+                      </Link>
+                      <a href="https://themiify.com" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-space-xs bg-white/10 hover:bg-white/20 text-white font-headline-sm text-headline-sm px-space-lg py-space-sm rounded-xl transition-all">
+                        <span className="material-symbols-outlined text-[20px]">open_in_new</span>
+                        <span>خدمات تصميم المتاجر Themiify</span>
+                      </a>
+                    </div>
+                  </div>
+                  <div className="lg:col-span-5 bg-white/5 rounded-xl p-space-md backdrop-blur-md">
+                    <div className="flex items-center justify-between mb-space-sm">
+                      <div className="flex items-center gap-space-xs">
+                        <span className="w-3 h-3 rounded-full bg-error"></span>
+                        <span className="w-3 h-3 rounded-full bg-primary-container"></span>
+                        <span className="w-3 h-3 rounded-full bg-success-green"></span>
+                      </div>
+                      <span className="font-code-badge text-code-badge text-gray-400">Themiify Video Embed Code</span>
+                    </div>
+                    <div className="bg-black/40 rounded-lg p-space-sm font-code-badge text-code-badge text-gray-300 overflow-x-auto text-left" dir="ltr">
+                      <span className="text-primary-container">&lt;iframe</span><br />
+                      &nbsp;&nbsp;src=<span className="text-success-green">"https://videos.themiify.com/v/921a8b"</span><br />
+                      &nbsp;&nbsp;width=<span className="text-primary-container">"100%"</span><br />
+                      &nbsp;&nbsp;loading=<span className="text-success-green">"lazy"</span><br />
+                      &nbsp;&nbsp;allow=<span className="text-success-green">"autoplay; fullscreen"</span><br />
+                      <span className="text-primary-container">&gt;&lt;/iframe&gt;</span>
+                    </div>
+                    <div className="mt-space-md flex items-center justify-between text-gray-300 font-label-md text-label-md">
+                      <span className="flex items-center gap-space-xs text-success-green">
+                        <span className="material-symbols-outlined text-[16px]">speed</span>
+                        <span>تحميل فوري 0.04s CDN</span>
+                      </span>
+                      <span className="text-primary-container font-semibold">جاهز للنسخ المباشر</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+
+          </div>
+        </div>
+      </main>
+
+      <footer className="w-full bg-surface-container-low py-space-2xl mt-auto">
+        <div className="w-full px-gutter flex flex-col gap-space-xl">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-space-lg">
+            <div className="flex flex-col gap-space-xs">
+              <div className="flex items-center gap-space-sm">
+                <img alt="Themiify Official Logo" className="h-7 w-auto object-contain" src="/icon.svg" />
+                <span className="font-headline-md text-headline-md text-on-surface font-bold">Themiify Videos</span>
+              </div>
+              <p className="font-body-sm text-body-sm text-on-surface-variant max-w-md">منصة معالجة ورفع وسائط سريعة، فورية، ومصممة لخدمة المبدعين وصناع المحتوى بكفاءة تامة ودون تعقيد.</p>
+            </div>
+            <div className="flex flex-wrap items-center gap-space-lg">
+              <a className="font-label-lg text-label-lg text-on-surface-variant hover:text-primary-container transition-colors" href="https://themiify.com" target="_blank" rel="noopener noreferrer">خدمات Themiify</a>
+              <Link className="font-label-lg text-label-lg text-on-surface-variant hover:text-primary-container transition-colors" href="#">شروط الاستخدام</Link>
+              <Link className="font-label-lg text-label-lg text-on-surface-variant hover:text-primary-container transition-colors" href="#">سياسة الخصوصية</Link>
+              <Link className="font-label-lg text-label-lg text-on-surface-variant hover:text-primary-container transition-colors" href="/tools">مركز الأدوات</Link>
+            </div>
+          </div>
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-space-md pt-space-md">
+            <span className="font-body-sm text-body-sm text-on-surface-variant">© {new Date().getFullYear()} Themiify.com. جميع الحقوق محفوظة لشبكة منصات Themiify.</span>
+            <div className="flex items-center gap-space-sm">
+              <span className="inline-block w-2 h-2 rounded-full bg-success-green"></span>
+              <span className="font-label-md text-label-md text-on-surface-variant">أنظمة السيرفرات نشطة وتعمل بكفاءة 100%</span>
+            </div>
+          </div>
+        </div>
+      </footer>
       <Toast toasts={toasts} />
-    </main>
+    </>
   );
 }

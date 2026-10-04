@@ -5,3 +5,4 @@ data/videos.json
 .cursor/
 public/uploads/
 .tmp-chunk-uploads/
+.agents/

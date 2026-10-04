@@ -28,6 +28,11 @@ function buildCsp() {
   const connectSrc = ["'self'", 'https://*.supabase.co'];
   if (supabaseOrigin) connectSrc.push(supabaseOrigin);
 
+  const scriptSrc = ["'self'", "'unsafe-inline'", "https://www.google.com", "https://www.gstatic.com", "https://hcaptcha.com", "https://*.hcaptcha.com"];
+  if (process.env.NODE_ENV === 'development') {
+    scriptSrc.push("'unsafe-eval'");
+  }
+
   return [
     "default-src 'self'",
     "base-uri 'self'",
@@ -38,7 +43,7 @@ function buildCsp() {
     "media-src 'self' blob: data: https:",
     "font-src 'self' data: https:",
     "style-src 'self' 'unsafe-inline' https:",
-    "script-src 'self' 'unsafe-inline' https://www.google.com https://www.gstatic.com https://hcaptcha.com https://*.hcaptcha.com",
+    `script-src ${scriptSrc.join(' ')}`,
     "frame-src 'self' https://www.google.com https://recaptcha.google.com https://hcaptcha.com https://*.hcaptcha.com",
     `connect-src ${connectSrc.join(' ')} https://www.google.com https://hcaptcha.com https://*.hcaptcha.com`,
     "upgrade-insecure-requests",

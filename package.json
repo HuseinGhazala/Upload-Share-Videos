@@ -26,6 +26,7 @@
     "react": "^19",
     "react-dom": "^19",
     "react-transition-group": "^4.4.5",
+    "sweetalert2": "^11.26.25",
     "zod": "^4.4.1"
   },
   "devDependencies": {

@@ -8,14 +8,18 @@ export default function Error({ error, reset }) {
   }, [error]);
 
   return (
-    <main className="min-h-screen bg-[#0a0a12] text-white flex items-center justify-center p-6">
-      <div className="max-w-md w-full rounded-2xl border border-red-500/30 bg-red-500/10 p-6 text-right">
-        <h2 className="text-xl font-bold text-red-300">حدث خطأ</h2>
-        <p className="text-sm text-white/70 mt-2">تعذر عرض هذا الجزء من الصفحة. يمكنك إعادة المحاولة.</p>
+    <main className="min-h-screen bg-surface flex flex-col items-center justify-center p-gutter">
+      <div className="max-w-md w-full rounded-2xl border border-error/30 bg-error-container p-space-lg text-center shadow-lg">
+        <div className="w-16 h-16 rounded-full bg-error/10 text-error flex items-center justify-center mx-auto mb-space-md">
+          <span className="material-symbols-outlined text-[32px]">warning</span>
+        </div>
+        <h2 className="font-headline-md text-xl font-bold text-on-error-container">حدث خطأ غير متوقع</h2>
+        <p className="font-body-sm text-sm text-on-surface-variant mt-2 mb-space-lg leading-relaxed">عذراً، تعذر عرض هذه الصفحة. قد يكون هناك خلل مؤقت، يمكنك محاولة تحديث الصفحة.</p>
         <button
           onClick={reset}
-          className="mt-4 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 border border-white/20 text-sm"
+          className="w-full px-5 py-3 rounded-xl bg-error text-on-error font-label-lg font-bold shadow-[0_4px_14px_rgba(179,38,30,0.3)] hover:opacity-90 transition-all active:scale-95 flex items-center justify-center gap-2"
         >
+          <span className="material-symbols-outlined text-[20px]">refresh</span>
           إعادة المحاولة
         </button>
       </div>
