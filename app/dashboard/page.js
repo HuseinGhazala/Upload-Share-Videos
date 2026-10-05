@@ -6,6 +6,7 @@ import { useVideoUpload } from '@/app/hooks/useVideoUpload';
 import { useAuth } from '@/app/providers/AuthProvider';
 import Footer from '../components/Footer';
 import MobileDashboard from '../components/MobileDashboard';
+import ProfileSettings from '../components/ProfileSettings';
 
 function Toast({ toasts }) {
   return (
@@ -102,6 +103,7 @@ export default function DashboardPage() {
       <main className="w-full pt-20 pb-10 bg-surface min-h-[calc(100vh-16rem)]">
         <section id="library" className="w-full px-gutter">
           <div className="max-w-6xl mx-auto">
+            <ProfileSettings />
             <VideoGallery
               videos={uploadedVideos}
               onCopy={handleCopy}
