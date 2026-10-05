@@ -12,13 +12,15 @@ export default function PricingPage() {
   const [experimentVariant, setExperimentVariant] = useState('price_first');
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const forced = params.get('v');
-    if (forced === 'price_first' || forced === 'value_first') {
-      setExperimentVariant(forced);
-      return;
-    }
-    setExperimentVariant(Math.random() < 0.5 ? 'price_first' : 'value_first');
+    setTimeout(() => {
+      const params = new URLSearchParams(window.location.search);
+      const forced = params.get('v');
+      if (forced === 'price_first' || forced === 'value_first') {
+        setExperimentVariant(forced);
+        return;
+      }
+      setExperimentVariant(Math.random() < 0.5 ? 'price_first' : 'value_first');
+    }, 0);
   }, []);
 
   useEffect(() => {

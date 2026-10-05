@@ -5,6 +5,8 @@ import Link from 'next/link';
 import VideoUpload from './components/VideoUpload';
 import { useVideoUpload } from './hooks/useVideoUpload';
 import { useAuth } from './providers/AuthProvider';
+import MobileHome from './components/MobileHome';
+import Footer from './components/Footer';
 import { MAX_VIDEO_BYTES_PER_UPLOAD } from '@/app/lib/plans';
 import { getAttributionFromLocation, trackFunnelEvent } from '@/app/lib/analytics/funnel';
 
@@ -92,11 +94,21 @@ export default function HomePage() {
 
   return (
     <>
-      <header className="fixed top-0 left-0 right-0 z-50 bg-surface/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(14,19,44,0.06)]">
+      {/* Mobile Layout (Visible only on mobile devices) */}
+      <MobileHome 
+        onUploadClick={() => document.getElementById('desktop-upload-btn')?.click()} 
+        uploadedVideos={uploadedVideos} 
+        progress={progress} 
+        loading={loading} 
+      />
+
+      {/* Desktop Layout (Hidden on mobile) */}
+      <div className="hidden md:block">
+        <header className="fixed top-0 left-0 right-0 z-50 bg-surface/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(14,19,44,0.06)]">
         <div className="h-16 w-full px-gutter flex items-center justify-between gap-space-md">
           <div className="flex items-center gap-space-lg">
             <div className="flex items-center gap-space-sm">
-              <img alt="Themiify Official Logo" className="h-8 w-auto object-contain" src="/icon.svg" />
+              <img alt="Themiify Official Logo" className="h-8 w-auto object-contain rounded-lg" src="/logo.png" />
               <span className="font-headline-sm text-headline-sm font-bold tracking-tight text-on-surface">Themiify <span className="text-primary-container">Videos</span></span>
             </div>
             <div className="hidden xl:flex items-center gap-space-xs bg-warm-surface px-space-sm py-space-xs rounded-xl shadow-[0_1px_4px_rgba(255,94,30,0.1)]">
@@ -128,7 +140,7 @@ export default function HomePage() {
               <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-space-md bg-warm-surface p-space-md rounded-xl shadow-sm">
                 <div className="flex items-center gap-space-sm">
                   <div className="w-10 h-10 rounded-lg bg-surface-container-lowest flex items-center justify-center shadow-sm">
-                    <img alt="Themiify Official Logo" className="w-7 h-7 object-contain" src="/icon.svg" />
+                    <img alt="Themiify Official Logo" className="w-7 h-7 object-contain rounded-md" src="/logo.png" />
                   </div>
                   <div>
                     <div className="flex items-center gap-space-xs">
@@ -301,32 +313,8 @@ export default function HomePage() {
         </div>
       </main>
 
-      <footer className="w-full bg-surface-container-low py-space-2xl mt-auto">
-        <div className="w-full px-gutter flex flex-col gap-space-xl">
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-space-lg">
-            <div className="flex flex-col gap-space-xs">
-              <div className="flex items-center gap-space-sm">
-                <img alt="Themiify Official Logo" className="h-7 w-auto object-contain" src="/icon.svg" />
-                <span className="font-headline-md text-headline-md text-on-surface font-bold">Themiify Videos</span>
-              </div>
-              <p className="font-body-sm text-body-sm text-on-surface-variant max-w-md">منصة معالجة ورفع وسائط سريعة، فورية، ومصممة لخدمة المبدعين وصناع المحتوى بكفاءة تامة ودون تعقيد.</p>
-            </div>
-            <div className="flex flex-wrap items-center gap-space-lg">
-              <a className="font-label-lg text-label-lg text-on-surface-variant hover:text-primary-container transition-colors" href="https://themiify.com" target="_blank" rel="noopener noreferrer">خدمات Themiify</a>
-              <Link className="font-label-lg text-label-lg text-on-surface-variant hover:text-primary-container transition-colors" href="#">شروط الاستخدام</Link>
-              <Link className="font-label-lg text-label-lg text-on-surface-variant hover:text-primary-container transition-colors" href="#">سياسة الخصوصية</Link>
-              <Link className="font-label-lg text-label-lg text-on-surface-variant hover:text-primary-container transition-colors" href="/tools">مركز الأدوات</Link>
-            </div>
-          </div>
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-space-md pt-space-md">
-            <span className="font-body-sm text-body-sm text-on-surface-variant">© {new Date().getFullYear()} Themiify.com. جميع الحقوق محفوظة لشبكة منصات Themiify.</span>
-            <div className="flex items-center gap-space-sm">
-              <span className="inline-block w-2 h-2 rounded-full bg-success-green"></span>
-              <span className="font-label-md text-label-md text-on-surface-variant">أنظمة السيرفرات نشطة وتعمل بكفاءة 100%</span>
-            </div>
-          </div>
-        </div>
-      </footer>
+        <Footer />
+      </div>
       <Toast toasts={toasts} />
     </>
   );

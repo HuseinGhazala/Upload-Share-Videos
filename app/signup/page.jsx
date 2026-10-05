@@ -22,8 +22,10 @@ export default function SignupPage() {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const params = new URLSearchParams(window.location.search);
-    setNextPlan(params.get('plan') || '');
+    setTimeout(() => {
+      const params = new URLSearchParams(window.location.search);
+      setNextPlan(params.get('plan') || '');
+    }, 0);
   }, []);
 
   const onSubmit = async (e) => {

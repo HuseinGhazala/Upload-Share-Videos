@@ -42,7 +42,7 @@ export default function PaymentQueue() {
     const res = await fetch(`/api/admin/payment-submissions/${id}/receipt-url`);
     const data = await res.json().catch(() => ({}));
     if (!res.ok || !data.url) {
-      Swal.fire({ title: 'خطأ', text: data.error || 'تعذّر فتح الإيصال.', icon: 'error', confirmButtonText: 'حسناً', confirmButtonColor: '#FF5E1E' });
+      Swal.fire({ title: 'خطأ', text: data.error || 'تعذّر فتح الإيصال.', icon: 'error', confirmButtonText: 'حسناً', confirmButtonColor: '##ff5e1e' });
       return;
     }
     window.open(data.url, '_blank', 'noopener,noreferrer');

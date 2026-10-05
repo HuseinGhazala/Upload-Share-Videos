@@ -1,11 +1,12 @@
 import './globals.css';
 import AppProviders from './providers/AppProviders';
-import { Space_Grotesk } from 'next/font/google';
+import MobileBottomNav from './components/MobileBottomNav';
+import { Cairo } from 'next/font/google';
 
-const spaceGrotesk = Space_Grotesk({
-  subsets: ['latin'], // Or whatever is supported
+const cairo = Cairo({
+  subsets: ['latin', 'arabic'], // Added arabic support
   weight: ['300', '400', '500', '600', '700'],
-  variable: '--font-space-grotesk',
+  variable: '--font-cairo',
   display: 'swap',
 });
 
@@ -20,9 +21,9 @@ export const metadata = {
     title: 'رفع فيديو',
   },
   icons: {
-    icon: '/icon.svg',
-    shortcut: '/icon.svg',
-    apple: '/icon.svg',
+    icon: '/icon.png',
+    shortcut: '/icon.png',
+    apple: '/icon.png',
   },
 };
 
@@ -32,10 +33,13 @@ export default function RootLayout({ children }) {
       <head>
         <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
         <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
-        <link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=Space+Grotesk:wght@100..900&display=swap" rel="stylesheet"/>
+        <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@200..1000&display=swap" rel="stylesheet"/>
       </head>
-      <body className={`${spaceGrotesk.variable} antialiased font-body-md bg-surface text-on-surface`}>
-        <AppProviders>{children}</AppProviders>
+      <body className={`${cairo.variable} antialiased font-body-md bg-surface text-on-surface`}>
+        <AppProviders>
+          {children}
+          <MobileBottomNav />
+        </AppProviders>
       </body>
     </html>
   );

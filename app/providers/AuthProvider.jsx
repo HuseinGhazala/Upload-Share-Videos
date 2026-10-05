@@ -51,7 +51,7 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     if (!user) {
-      setQuota((prev) => (prev === null ? prev : null));
+      setTimeout(() => setQuota(null), 0);
       return;
     }
     let cancelled = false;

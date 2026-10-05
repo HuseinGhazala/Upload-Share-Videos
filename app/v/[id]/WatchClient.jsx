@@ -51,10 +51,10 @@ export default function WatchClient({ id, accessToken }) {
   }, [meta?.id, accessToken]);
 
   const shareUrl = useMemo(() => {
-    if (!meta?.id || !accessToken) return '';
+    if (!meta || !meta.id || !accessToken || typeof window === 'undefined') return '';
     const origin = window.location.origin.replace('0.0.0.0', 'localhost');
     return buildShareUrl(meta.id, accessToken, origin);
-  }, [meta?.id, accessToken]);
+  }, [meta, accessToken]);
 
   if (loading) {
     return (

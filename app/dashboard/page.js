@@ -4,6 +4,8 @@ import Link from 'next/link';
 import VideoGallery from '@/app/components/VideoGallery';
 import { useVideoUpload } from '@/app/hooks/useVideoUpload';
 import { useAuth } from '@/app/providers/AuthProvider';
+import Footer from '../components/Footer';
+import MobileDashboard from '../components/MobileDashboard';
 
 function Toast({ toasts }) {
   return (
@@ -72,11 +74,14 @@ export default function DashboardPage() {
 
   return (
     <>
-      <header className="fixed top-0 left-0 right-0 z-50 bg-surface/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(14,19,44,0.06)]">
+      <MobileDashboard uploadedVideos={uploadedVideos} loading={loadingList} />
+      
+      <div className="hidden md:block">
+        <header className="fixed top-0 left-0 right-0 z-50 bg-surface/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(14,19,44,0.06)]">
         <div className="h-16 w-full px-gutter flex items-center justify-between gap-space-md">
           <div className="flex items-center gap-space-lg">
             <div className="flex items-center gap-space-sm">
-              <img alt="Themiify Official Logo" className="h-8 w-auto object-contain" src="/icon.svg" />
+              <img alt="Themiify Official Logo" className="h-8 w-auto object-contain rounded-lg" src="/logo.png" />
               <span className="font-headline-sm text-headline-sm font-bold tracking-tight text-on-surface">Themiify <span className="text-primary-container">Videos</span></span>
             </div>
           </div>
@@ -113,34 +118,11 @@ export default function DashboardPage() {
             />
           </div>
         </section>
-      </main>
+        </main>
 
-      <footer className="w-full bg-surface-container-low py-space-2xl mt-auto">
-        <div className="w-full px-gutter flex flex-col gap-space-xl">
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-space-lg">
-            <div className="flex flex-col gap-space-xs">
-              <div className="flex items-center gap-space-sm">
-                <img alt="Themiify Official Logo" className="h-7 w-auto object-contain" src="/icon.svg" />
-                <span className="font-headline-md text-headline-md text-on-surface font-bold">Themiify Videos</span>
-              </div>
-              <p className="font-body-sm text-body-sm text-on-surface-variant max-w-md">منصة معالجة ورفع وسائط سريعة، فورية، ومصممة لخدمة المبدعين وصناع المحتوى بكفاءة تامة ودون تعقيد.</p>
-            </div>
-            <div className="flex flex-wrap items-center gap-space-lg">
-              <a className="font-label-lg text-label-lg text-on-surface-variant hover:text-primary-container transition-colors" href="https://themiify.com" target="_blank" rel="noopener noreferrer">خدمات Themiify</a>
-              <Link className="font-label-lg text-label-lg text-on-surface-variant hover:text-primary-container transition-colors" href="#">شروط الاستخدام</Link>
-              <Link className="font-label-lg text-label-lg text-on-surface-variant hover:text-primary-container transition-colors" href="#">سياسة الخصوصية</Link>
-              <Link className="font-label-lg text-label-lg text-on-surface-variant hover:text-primary-container transition-colors" href="/tools">مركز الأدوات</Link>
-            </div>
-          </div>
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-space-md pt-space-md">
-            <span className="font-body-sm text-body-sm text-on-surface-variant">© {new Date().getFullYear()} Themiify.com. جميع الحقوق محفوظة لشبكة منصات Themiify.</span>
-            <div className="flex items-center gap-space-sm">
-              <span className="inline-block w-2 h-2 rounded-full bg-success-green"></span>
-              <span className="font-label-md text-label-md text-on-surface-variant">أنظمة السيرفرات نشطة وتعمل بكفاءة 100%</span>
-            </div>
-          </div>
-        </div>
-      </footer>
+        <Footer />
+      </div>
+      
       <Toast toasts={toasts} />
     </>
   );
