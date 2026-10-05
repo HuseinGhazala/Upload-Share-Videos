@@ -120,7 +120,33 @@ export async function proxy(request) {
     }
   );
 
-  await supabase.auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  const publicPaths = [
+    '/',
+    '/login',
+    '/signup',
+    '/forgot-password',
+    '/reset-password',
+    '/pricing',
+    '/api',
+    '/admin'
+  ];
+
+  // If it's a static file, next internal, or a public path, allow it
+  const isPublic =
+    pathname.startsWith('/_next') ||
+    pathname.match(/\.(png|jpg|jpeg|gif|webp|svg|ico)$/) ||
+    publicPaths.includes(pathname) ||
+    publicPaths.some((p) => p !== '/' && pathname.startsWith(p));
+
+  // If not logged in and trying to access ANY non-public page (including home / or tools)
+  if (!user && !isPublic) {
+    const login = new URL('/login', request.url);
+    const redirect = NextResponse.redirect(login);
+    noStoreDocumentHeaders(redirect);
+    return redirect;
+  }
 
   const { sessionId, isNew } = getOrCreateBrowserSessionId(request);
   if (isNew) {

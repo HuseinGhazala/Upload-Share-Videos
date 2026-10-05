@@ -29,6 +29,7 @@ function LoginForm() {
   const [error, setError] = useState(searchParams.get('error') || '');
   const [loading, setLoading] = useState(false);
   const [captchaToken, setCaptchaToken] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const nextPath = searchParams.get('next');
 
   useEffect(() => {
@@ -71,13 +72,10 @@ function LoginForm() {
         source: searchParams.get('from') || '',
       });
       if (nextPath && nextPath.startsWith('/') && !nextPath.startsWith('//')) {
-        router.push(nextPath);
-      } else if (!me?.uploadAllowed) {
-        router.push('/pricing?from=login_no_plan');
+        window.location.href = nextPath;
       } else {
-        router.push('/');
+        window.location.href = '/';
       }
-      router.refresh();
     } catch (err) {
       const raw = typeof err?.message === 'string' ? err.message : '';
       setError(raw || 'تعذّر تسجيل الدخول، حاول مرة أخرى.');
@@ -87,36 +85,33 @@ function LoginForm() {
   };
 
   return (
-    <main className="min-h-screen text-white">
+    <main className="min-h-screen bg-background text-on-surface">
       {CAPTCHA.provider && CAPTCHA.siteKey ? (
         <Script src={captchaScriptSrc(CAPTCHA.provider)} strategy="afterInteractive" />
       ) : null}
-      <div className="section-wrap max-w-2xl py-10 sm:py-14">
+      <div className="w-full max-w-lg mx-auto py-10 sm:py-14 px-4">
         <AppNavbar />
         <motion.div
           initial={{ opacity: 0, y: 28 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
-          className="glass-panel p-8 sm:p-10"
+          className="bg-white dark:bg-surface border border-outline-variant/30 rounded-3xl p-8 sm:p-10 shadow-sm mt-8"
         >
-          <h1 className="text-3xl font-bold text-center mb-2 bg-gradient-to-b from-white to-indigo-200 bg-clip-text text-transparent">
+          <h1 className="text-3xl font-headline-md font-bold text-center mb-2 text-primary">
             تسجيل الدخول
           </h1>
-          <p className="text-white/55 text-sm text-center mb-8">
+          <p className="text-on-surface-variant text-sm text-center mb-8">
             أدخل بريدك الإلكتروني وكلمة المرور للوصول إلى حسابك.
           </p>
-          <p className="text-center text-xs text-white/45 mb-5">
-            سنوجّهك تلقائياً بعد الدخول إلى الخطوة المناسبة لإكمال اشتراكك أو بدء الرفع.
-          </p>
+          
           {!isSupabaseBrowserConfigured() && (
-            <p className="text-xs text-amber-200/90 bg-amber-500/15 border border-amber-400/25 rounded-xl px-3 py-3 mb-4 leading-relaxed whitespace-pre-wrap">
-              تنبيه: يبدو أن إعدادات الاتصال غير جاهزة في النسخة الحالية. يمكنك المحاولة، وإذا تكرّر الفشل
-              راجع متغيرات NEXT_PUBLIC ثم أعد نشر الموقع.
+            <p className="text-xs text-error bg-error-container/20 border border-error/20 rounded-xl px-3 py-3 mb-4 leading-relaxed whitespace-pre-wrap">
+              تنبيه: يبدو أن إعدادات الاتصال غير جاهزة في النسخة الحالية. يمكنك المحاولة، وإذا تكرّر الفشل راجع متغيرات NEXT_PUBLIC ثم أعد نشر الموقع.
             </p>
           )}
-          <form onSubmit={onSubmit} className="space-y-4">
+          <form onSubmit={onSubmit} className="space-y-5">
             <div>
-              <label htmlFor="login-email" className="block text-sm text-white/70 mb-1">البريد الإلكتروني</label>
+              <label htmlFor="login-email" className="block text-sm font-bold text-on-surface mb-2">البريد الإلكتروني</label>
               <input
                 id="login-email"
                 name="email"
@@ -124,32 +119,50 @@ function LoginForm() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full rounded-xl bg-white/10 border border-white/20 px-4 py-3 text-white outline-none focus:border-indigo-500 placeholder:text-white/30"
+                className="w-full rounded-xl bg-background border border-outline-variant/50 px-4 py-3 text-on-surface outline-none focus:border-primary placeholder:text-on-surface-variant/50 transition-colors"
                 autoComplete="email"
+                placeholder="name@example.com"
+                dir="ltr"
               />
             </div>
             <div>
-              <div className="flex items-center justify-between gap-2 mb-1">
-                <label htmlFor="login-password" className="text-sm text-white/70">
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <label htmlFor="login-password" className="text-sm font-bold text-on-surface">
                   كلمة المرور
                 </label>
-                <Link href="/forgot-password" className="text-xs text-indigo-300 hover:text-indigo-200 shrink-0">
+                <Link href="/forgot-password" className="text-xs text-primary hover:text-primary-hover shrink-0 font-bold">
                   نسيت كلمة المرور؟
                 </Link>
               </div>
-              <input
-                id="login-password"
-                name="password"
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full rounded-xl bg-white/10 border border-white/20 px-4 py-3 text-white outline-none focus:border-indigo-500 placeholder:text-white/30"
-                autoComplete="current-password"
-              />
+              <div className="relative">
+                <input
+                  id="login-password"
+                  name="password"
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full rounded-xl bg-background border border-outline-variant/50 px-4 py-3 pr-12 text-on-surface outline-none focus:border-primary placeholder:text-on-surface-variant/50 transition-colors"
+                  autoComplete="current-password"
+                  placeholder="••••••••"
+                  dir="ltr"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute top-1/2 -translate-y-1/2 right-3 p-1 rounded-lg text-on-surface-variant hover:text-on-surface transition-colors"
+                  tabIndex={-1}
+                >
+                  {showPassword ? (
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                  ) : (
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                  )}
+                </button>
+              </div>
             </div>
             {CAPTCHA.provider && CAPTCHA.siteKey ? (
-              <div className="space-y-2">
+              <div className="space-y-2 flex justify-center py-2">
                 {CAPTCHA.provider === 'recaptcha' ? (
                   <div
                     className="g-recaptcha"
@@ -169,26 +182,26 @@ function LoginForm() {
               </div>
             ) : null}
             {resetDone && (
-              <p className="text-sm text-green-400 bg-green-500/10 border border-green-500/20 rounded-lg px-3 py-2">
+              <p className="text-sm text-primary bg-primary-container/30 border border-primary/20 rounded-lg px-3 py-2 text-center">
                 تم تحديث كلمة المرور بنجاح. يمكنك الآن تسجيل الدخول بكلمة المرور الجديدة.
               </p>
             )}
             {error && (
-              <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
+              <p className="text-sm text-error bg-error-container/30 border border-error/20 rounded-lg px-3 py-2 text-center font-bold">
                 {error}
               </p>
             )}
             <button
               type="submit"
               disabled={loading}
-              className="btn-primary w-full disabled:opacity-50"
+              className="bg-primary hover:bg-primary-hover text-white w-full py-4 rounded-2xl font-bold shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed mt-2"
             >
               {loading ? 'جاري الدخول…' : 'تسجيل الدخول'}
             </button>
           </form>
-          <p className="text-center text-sm text-white/50 mt-6">
+          <p className="text-center text-sm text-on-surface-variant mt-8">
             ليس لديك حساب بعد؟{' '}
-            <Link href="/signup" className="text-indigo-300 hover:text-indigo-200">
+            <Link href="/signup" className="text-primary hover:text-primary-hover font-bold">
               أنشئ حساباً جديداً
             </Link>
           </p>
@@ -202,8 +215,8 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <main className="min-h-screen bg-[#0a0a12] text-white flex items-center justify-center">
-          <p className="text-white/50">جاري تحميل الصفحة…</p>
+        <main className="min-h-screen bg-background text-on-surface flex items-center justify-center">
+          <p className="text-on-surface-variant">جاري تحميل الصفحة…</p>
         </main>
       }
     >

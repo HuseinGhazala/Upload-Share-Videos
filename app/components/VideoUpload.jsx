@@ -20,9 +20,10 @@ export default function VideoUpload({
   canUpload = false,
   maxUploadBytes = MAX_VIDEO_BYTES_PER_UPLOAD,
   stats,
+  setShowAuthModal = () => {},
 }) {
-  const effectiveCanUpload = FREE_PUBLIC_MODE ? true : canUpload;
-  const effectiveIsLoggedIn = FREE_PUBLIC_MODE ? true : isLoggedIn;
+  const effectiveCanUpload = isLoggedIn;
+  const effectiveIsLoggedIn = isLoggedIn;
   const [dragOver, setDragOver] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [fileError, setFileError] = useState('');
@@ -149,7 +150,11 @@ export default function VideoUpload({
   const onDrop = (e) => {
     e.preventDefault();
     setDragOver(false);
-    if (!effectiveCanUpload || loading) return;
+    if (!effectiveCanUpload) {
+      setShowAuthModal(true);
+      return;
+    }
+    if (loading) return;
     const files = e.dataTransfer.files;
     if (files.length > 1) handleFiles(files);
     else if (files[0]) handleFile(files[0]);
@@ -211,14 +216,19 @@ export default function VideoUpload({
         <div className="lg:col-span-7 flex flex-col gap-space-md">
           <div
             onDragOver={(e) => {
-              if (!effectiveCanUpload) return;
               e.preventDefault();
               setDragOver(true);
             }}
             onDragLeave={() => setDragOver(false)}
             onDrop={onDrop}
-            onClick={() => effectiveCanUpload && !loading && inputRef.current?.click()}
-            className={`relative group bg-surface-container-lowest rounded-xl p-space-2xl text-center shadow-sm cursor-pointer transition-all duration-300 hover:shadow-md flex flex-col items-center justify-center min-h-[360px] ${dragOver ? 'bg-warm-surface scale-[1.01]' : ''} ${loading || !effectiveCanUpload ? 'pointer-events-none opacity-80' : ''}`}
+            onClick={() => {
+              if (!effectiveCanUpload) {
+                setShowAuthModal(true);
+              } else if (!loading) {
+                inputRef.current?.click();
+              }
+            }}
+            className={`relative group bg-surface-container-lowest rounded-xl p-space-2xl text-center shadow-sm cursor-pointer transition-all duration-300 hover:shadow-md flex flex-col items-center justify-center min-h-[360px] ${dragOver ? 'bg-warm-surface scale-[1.01]' : ''} ${loading ? 'pointer-events-none opacity-80' : ''}`}
             id="dropzone"
           >
             <input
@@ -241,9 +251,7 @@ export default function VideoUpload({
             <h3 className="font-headline-lg text-headline-lg text-on-surface mb-space-xs font-bold">
               {loading
                 ? `جاري الرفع${batchTotal > 0 ? ' (' + batchIndex + '/' + batchTotal + ')' : ''}…`
-                : !effectiveCanUpload
-                  ? 'سجّل الدخول لبدء الرفع'
-                  : dragOver
+                : dragOver
                     ? 'أفلِت الملفات هنا'
                     : 'اسحب ملفات (حتى 10) وأفلِتها هنا'}
             </h3>
@@ -254,8 +262,15 @@ export default function VideoUpload({
             <div className="flex flex-wrap items-center justify-center gap-space-sm relative z-10">
               <button 
                 type="button" 
-                onClick={(e) => { e.stopPropagation(); inputRef.current?.click(); }}
-                disabled={loading || !effectiveCanUpload}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (!effectiveCanUpload) {
+                    setShowAuthModal(true);
+                  } else {
+                    inputRef.current?.click();
+                  }
+                }}
+                disabled={loading}
                 className="inline-flex items-center gap-space-xs bg-primary-container hover:bg-primary text-on-primary font-headline-sm text-headline-sm px-space-lg py-space-sm rounded-xl shadow-[0_8px_24px_-4px_rgba(255,94,30,0.35)] transition-all disabled:opacity-50"
               >
                 <span className="material-symbols-outlined text-[20px]">file_open</span>
@@ -263,8 +278,15 @@ export default function VideoUpload({
               </button>
               <button 
                 type="button"
-                onClick={(e) => { e.stopPropagation(); cameraRef.current?.click(); }}
-                disabled={loading || !effectiveCanUpload}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (!effectiveCanUpload) {
+                    setShowAuthModal(true);
+                  } else {
+                    cameraRef.current?.click();
+                  }
+                }}
+                disabled={loading}
                 className="inline-flex items-center gap-space-xs bg-surface-container hover:bg-surface-container-high text-on-surface font-headline-sm text-headline-sm px-space-lg py-space-sm rounded-xl transition-all disabled:opacity-50"
               >
                 <span className="material-symbols-outlined text-primary-container text-[20px]">photo_camera</span>
@@ -277,7 +299,7 @@ export default function VideoUpload({
                 capture="environment"
                 className="hidden"
                 onChange={onCameraChange}
-                disabled={loading || !effectiveCanUpload}
+                disabled={loading}
               />
             </div>
 

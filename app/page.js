@@ -9,6 +9,7 @@ import MobileHome from './components/MobileHome';
 import Footer from './components/Footer';
 import { MAX_VIDEO_BYTES_PER_UPLOAD } from '@/app/lib/plans';
 import { getAttributionFromLocation, trackFunnelEvent } from '@/app/lib/analytics/funnel';
+import AuthModal from './components/AuthModal';
 
 const MediaLab = dynamic(() => import('./components/MediaLab'), {
   loading: () => (
@@ -50,6 +51,7 @@ export default function HomePage() {
   const [toasts, setToasts] = useState([]);
   const [showMediaLab, setShowMediaLab] = useState(false);
   const [firstUploadTracked, setFirstUploadTracked] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   useEffect(() => {
     if (!user) setListScope('public');
@@ -249,6 +251,7 @@ export default function HomePage() {
                 canUpload={Boolean(user) && Boolean(quota?.uploadAllowed)}
                 maxUploadBytes={quota?.maxUploadBytes ?? MAX_VIDEO_BYTES_PER_UPLOAD}
                 stats={stats}
+                setShowAuthModal={setShowAuthModal}
               />
             </section>
 
@@ -316,6 +319,7 @@ export default function HomePage() {
         <Footer />
       </div>
       <Toast toasts={toasts} />
+      <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
     </>
   );
 }
