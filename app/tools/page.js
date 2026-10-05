@@ -162,7 +162,7 @@ export default function ToolsPage() {
   };
 
   return (
-    <div className="flex flex-col w-full min-h-screen bg-background text-on-background selection:bg-primary-container selection:text-on-primary-container">
+    <div className="flex flex-col w-full min-h-screen overflow-x-hidden bg-background text-on-background selection:bg-primary-container selection:text-on-primary-container">
       {/* Mobile Header */}
       <header className="fixed top-0 w-full z-50 bg-surface/85 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] pt-safe md:hidden">
         <div className="h-16 px-gutter-mobile flex items-center justify-between">
@@ -367,7 +367,7 @@ export default function ToolsPage() {
               </div>
               
               <div className="lg:col-span-5 flex flex-col gap-space-md">
-                <input type="file" ref={imageInputRef} className="hidden" accept="image/png, image/jpeg, image/webp, image/gif" onChange={(e) => {
+                <input type="file" ref={imageInputRef} className="hidden" accept="image/png, image/jpeg, image/webp, image/gif" onClick={(e) => e.target.value = null} onChange={(e) => {
                   const file = e.target.files[0];
                   if (file) {
                     setImageFile(file);
@@ -447,7 +447,7 @@ export default function ToolsPage() {
                         <p className="font-label-md text-sm text-on-surface font-semibold mt-1">اضغط لاختيار فيديو لاستخراج الصوت</p>
                         <p className="font-label-xs text-xs text-on-surface-variant">MP4, MOV, WebM (حتى 100MB)</p>
                       </div>
-                      <input type="file" className="hidden" accept="video/*" onChange={(e) => {
+                      <input type="file" className="hidden" accept="video/*" onClick={(e) => e.target.value = null} onChange={(e) => {
                         const file = e.target.files[0];
                         if (file) {
                           setAudioFile(file);
@@ -602,7 +602,7 @@ export default function ToolsPage() {
                         <p className="font-label-md text-sm text-on-surface font-semibold mt-1">اضغط لاختيار الميديا أو اسحب وأفلت</p>
                         <p className="font-label-xs text-xs text-on-surface-variant">الحد الأقصى للملف: 50MB</p>
                       </div>
-                      <input type="file" className="hidden" accept={convertMode === 'video' ? "video/*" : "image/*"} onChange={(e) => {
+                      <input type="file" className="hidden" accept={convertMode === 'video' ? "video/*" : "image/*"} onClick={(e) => e.target.value = null} onChange={(e) => {
                         const file = e.target.files[0];
                         if (file) {
                           setConvertFile(file);
@@ -635,7 +635,7 @@ export default function ToolsPage() {
                       </select>
                     </div>
                     <div className="w-10 h-10 rounded-full bg-primary-container/20 flex items-center justify-center text-primary border border-primary/20 self-end mb-0.5">
-                      <span className="material-symbols-outlined text-[20px]">arrow_forward</span>
+                      <span className="material-symbols-outlined text-[20px]">arrow_back</span>
                     </div>
                     <div className="flex-1 flex flex-col gap-1">
                       <span className="font-label-xs text-xs text-on-surface-variant">التحويل إلى الصيغة:</span>
@@ -743,7 +743,7 @@ export default function ToolsPage() {
                         </div>
                       )}
                     </div>
-                    <span className="font-label-xs text-xs text-on-surface-variant mt-2 font-mono truncate max-w-full px-4" dir="ltr">{qrUrl}</span>
+                    <span className="font-label-xs text-xs text-on-surface-variant mt-2 font-mono truncate w-full block text-center px-2" dir="ltr">{qrUrl}</span>
                   </div>
                   
                   <div className="w-full flex flex-col gap-1">
@@ -759,10 +759,10 @@ export default function ToolsPage() {
                     </div>
                   </div>
                   
-                  <div className="w-full flex items-center justify-between text-xs text-on-surface-variant cursor-pointer select-none">
-                    <span onClick={() => setQrIncludeLogo(!qrIncludeLogo)} className="flex items-center gap-1.5"><span className={`w-2.5 h-2.5 rounded-full inline-block ${qrIncludeLogo ? 'bg-primary' : 'bg-surface-container'}`}></span> تضمين شعار <bdi>Themiify</bdi></span>
-                    <span onClick={() => setQrErrorCorrection(!qrErrorCorrection)} className="flex items-center gap-1.5"><span className={`w-2.5 h-2.5 rounded-full inline-block ${qrErrorCorrection ? 'bg-success-green' : 'bg-surface-container'}`}></span> تصحيح أخطاء <span dir="ltr">30%</span></span>
-                    <span onClick={() => setQrRounded(!qrRounded)} className="flex items-center gap-1.5"><span className={`w-2.5 h-2.5 rounded-full inline-block ${qrRounded ? 'bg-primary' : 'bg-surface-container'}`}></span> أركان دائرية</span>
+                  <div className="w-full flex flex-wrap items-center justify-center gap-3 text-[11px] sm:text-xs text-on-surface-variant cursor-pointer select-none mt-2">
+                    <span onClick={() => setQrIncludeLogo(!qrIncludeLogo)} className="flex items-center gap-1.5"><span className={`w-2.5 h-2.5 rounded-full inline-block shrink-0 ${qrIncludeLogo ? 'bg-primary' : 'bg-surface-container'}`}></span> تضمين شعار <bdi>Themiify</bdi></span>
+                    <span onClick={() => setQrErrorCorrection(!qrErrorCorrection)} className="flex items-center gap-1.5"><span className={`w-2.5 h-2.5 rounded-full inline-block shrink-0 ${qrErrorCorrection ? 'bg-success-green' : 'bg-surface-container'}`}></span> تصحيح أخطاء <span dir="ltr">30%</span></span>
+                    <span onClick={() => setQrRounded(!qrRounded)} className="flex items-center gap-1.5"><span className={`w-2.5 h-2.5 rounded-full inline-block shrink-0 ${qrRounded ? 'bg-primary' : 'bg-surface-container'}`}></span> أركان دائرية</span>
                   </div>
                 </div>
               </div>
@@ -805,7 +805,7 @@ export default function ToolsPage() {
                     <label className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-black/40 text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
                       <span className="material-symbols-outlined text-[32px] mb-2">upload_file</span>
                       <span className="font-label-md font-bold">اضغط لاختيار الميديا</span>
-                      <input type="file" className="hidden" accept="image/*,video/*" onChange={(e) => {
+                      <input type="file" className="hidden" accept="image/*,video/*" onClick={(e) => e.target.value = null} onChange={(e) => {
                         const file = e.target.files[0];
                         if (file) {
                           setWatermarkFile(file);
@@ -847,12 +847,12 @@ export default function ToolsPage() {
                     <div>
                       <label className="font-label-xs text-xs text-on-surface-variant block mb-1">موضع العلامة المائية:</label>
                       <div className="grid grid-cols-3 gap-1 bg-background p-1 rounded-lg border border-outline-variant/30">
-                        <button onClick={() => setWatermarkPos('top-right')} className={`py-1 text-center rounded text-xs ${watermarkPos === 'top-right' ? 'bg-primary text-on-primary font-bold' : 'hover:bg-surface-container text-on-surface-variant'}`} type="button">أعلى يمين</button>
-                        <button onClick={() => setWatermarkPos('center')} className={`py-1 text-center rounded text-xs ${watermarkPos === 'center' ? 'bg-primary text-on-primary font-bold' : 'hover:bg-surface-container text-on-surface-variant'}`} type="button">الوسط</button>
-                        <button onClick={() => setWatermarkPos('top-left')} className={`py-1 text-center rounded text-xs ${watermarkPos === 'top-left' ? 'bg-primary text-on-primary font-bold' : 'hover:bg-surface-container text-on-surface-variant'}`} type="button">أعلى يسار</button>
-                        <button onClick={() => setWatermarkPos('bottom-left')} className={`py-1 text-center rounded text-xs ${watermarkPos === 'bottom-left' ? 'bg-primary text-on-primary font-bold' : 'hover:bg-surface-container text-on-surface-variant'}`} type="button">أسفل يسار</button>
-                        <button onClick={() => setWatermarkPos('tiled')} className={`py-1 text-center rounded text-xs ${watermarkPos === 'tiled' ? 'bg-primary text-on-primary font-bold' : 'hover:bg-surface-container text-on-surface-variant'}`} type="button">نمط مكرر</button>
-                        <button onClick={() => setWatermarkPos('bottom-right')} className={`py-1 text-center rounded text-xs ${watermarkPos === 'bottom-right' ? 'bg-primary text-on-primary font-bold' : 'hover:bg-surface-container text-on-surface-variant'}`} type="button">أسفل يمين</button>
+                        <button onClick={() => setWatermarkPos('top-right')} className={`py-1.5 px-0.5 text-center rounded text-[10px] sm:text-xs ${watermarkPos === 'top-right' ? 'bg-primary text-on-primary font-bold' : 'hover:bg-surface-container text-on-surface-variant'}`} type="button">أعلى يمين</button>
+                        <button onClick={() => setWatermarkPos('center')} className={`py-1.5 px-0.5 text-center rounded text-[10px] sm:text-xs ${watermarkPos === 'center' ? 'bg-primary text-on-primary font-bold' : 'hover:bg-surface-container text-on-surface-variant'}`} type="button">الوسط</button>
+                        <button onClick={() => setWatermarkPos('top-left')} className={`py-1.5 px-0.5 text-center rounded text-[10px] sm:text-xs ${watermarkPos === 'top-left' ? 'bg-primary text-on-primary font-bold' : 'hover:bg-surface-container text-on-surface-variant'}`} type="button">أعلى يسار</button>
+                        <button onClick={() => setWatermarkPos('bottom-left')} className={`py-1.5 px-0.5 text-center rounded text-[10px] sm:text-xs ${watermarkPos === 'bottom-left' ? 'bg-primary text-on-primary font-bold' : 'hover:bg-surface-container text-on-surface-variant'}`} type="button">أسفل يسار</button>
+                        <button onClick={() => setWatermarkPos('tiled')} className={`py-1.5 px-0.5 text-center rounded text-[10px] sm:text-xs ${watermarkPos === 'tiled' ? 'bg-primary text-on-primary font-bold' : 'hover:bg-surface-container text-on-surface-variant'}`} type="button">نمط مكرر</button>
+                        <button onClick={() => setWatermarkPos('bottom-right')} className={`py-1.5 px-0.5 text-center rounded text-[10px] sm:text-xs ${watermarkPos === 'bottom-right' ? 'bg-primary text-on-primary font-bold' : 'hover:bg-surface-container text-on-surface-variant'}`} type="button">أسفل يمين</button>
                       </div>
                     </div>
                     <div>

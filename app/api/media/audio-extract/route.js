@@ -5,7 +5,9 @@ import os from 'os';
 import ffmpeg from 'fluent-ffmpeg';
 import ffmpegStatic from 'ffmpeg-static';
 
-ffmpeg.setFfmpegPath(ffmpegStatic);
+const ffmpegExe = os.platform() === 'win32' ? 'ffmpeg.exe' : 'ffmpeg';
+const ffmpegPath = path.join(process.cwd(), 'node_modules', 'ffmpeg-static', ffmpegExe);
+ffmpeg.setFfmpegPath(ffmpegPath);
 
 export async function POST(req) {
   try {
