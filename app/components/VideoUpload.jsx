@@ -32,12 +32,16 @@ export default function VideoUpload({
   const [visibility, setVisibility] = useState('public');
   const [linkTtl, setLinkTtl] = useState('none');
   const [watermarkText, setWatermarkText] = useState('');
-  const [compressVideo, setCompressVideo] = useState(true);
+  const [compressVideo, setCompressVideo] = useState(false);
   const [useWatermark, setUseWatermark] = useState(false);
+  const [isPreparing, setIsPreparing] = useState(false);
+  const [prepProgress, setPrepProgress] = useState(0);
   const [batchIndex, setBatchIndex] = useState(0);
   const [batchTotal, setBatchTotal] = useState(0);
   const inputRef = useRef(null);
   const cameraRef = useRef(null);
+
+  const isBusy = Boolean(loading || isPreparing || selectedFile);
 
   const maxMbRounded = Math.max(1, Math.round(maxUploadBytes / (1024 * 1024)));
 
@@ -56,10 +60,10 @@ export default function VideoUpload({
   );
 
   const prepareFile = useCallback(
-    async (file) => {
+    async (file, onProgress) => {
       let prepared = file;
       if (compressVideo && file.type.startsWith('video/')) {
-        prepared = await compressVideoFile(file);
+        prepared = await compressVideoFile(file, { onProgress });
       }
       if (useWatermark && watermarkText.trim() && supportsWatermark(prepared)) {
         prepared = await applyWatermarkToFile(prepared, { text: watermarkText });
@@ -81,9 +85,14 @@ export default function VideoUpload({
       setSelectedFile(file);
       setLastUploaded(null);
       setBatchResults([]);
+      setPrepProgress(0);
 
       try {
-        const prepared = await prepareFile(file);
+        if (compressVideo || useWatermark) {
+          setIsPreparing(true);
+        }
+        const prepared = await prepareFile(file, (p) => setPrepProgress(p));
+        setIsPreparing(false);
         const result = await onUpload(prepared, visibility, linkTtl);
         setLastUploaded(result);
         setSelectedFile(null);
@@ -93,11 +102,13 @@ export default function VideoUpload({
         );
         return result;
       } catch (e) {
+        setIsPreparing(false);
+        setSelectedFile(null);
         onToast(e.message ? `تعذّر الرفع: ${e.message}` : 'تعذّر رفع الملف، حاول مرة أخرى.', 'error');
         throw e;
       }
     },
-    [onUpload, onToast, visibility, linkTtl, effectiveCanUpload, validateFile, prepareFile]
+    [onUpload, onToast, visibility, linkTtl, effectiveCanUpload, validateFile, prepareFile, compressVideo, useWatermark]
   );
 
   const handleFiles = useCallback(
@@ -115,6 +126,7 @@ export default function VideoUpload({
       setBatchResults([]);
       setBatchTotal(files.length);
       setBatchIndex(0);
+      setPrepProgress(0);
 
       const results = [];
       for (let i = 0; i < files.length; i++) {
@@ -125,11 +137,17 @@ export default function VideoUpload({
           onToast(`${file.name}: ${err}`, 'error');
           continue;
         }
+        setSelectedFile(file);
         try {
-          const prepared = await prepareFile(file);
+          if (compressVideo || useWatermark) {
+            setIsPreparing(true);
+          }
+          const prepared = await prepareFile(file, (p) => setPrepProgress(p));
+          setIsPreparing(false);
           const result = await onUpload(prepared, visibility, linkTtl);
           results.push(result);
         } catch (e) {
+          setIsPreparing(false);
           onToast(`${file.name}: ${e.message || 'فشل الرفع'}`, 'error');
         }
       }
@@ -137,6 +155,7 @@ export default function VideoUpload({
       setBatchTotal(0);
       setBatchIndex(0);
       setSelectedFile(null);
+      setIsPreparing(false);
 
       if (results.length) {
         setBatchResults(results);
@@ -144,7 +163,7 @@ export default function VideoUpload({
         onToast(`اكتمل رفع ${results.length} من ${files.length} ملف`, 'success');
       }
     },
-    [effectiveCanUpload, validateFile, prepareFile, onUpload, visibility, linkTtl, onToast]
+    [effectiveCanUpload, validateFile, prepareFile, onUpload, visibility, linkTtl, onToast, compressVideo, useWatermark]
   );
 
   const onDrop = (e) => {
@@ -224,11 +243,11 @@ export default function VideoUpload({
             onClick={() => {
               if (!effectiveCanUpload) {
                 setShowAuthModal(true);
-              } else if (!loading) {
+              } else if (!isBusy) {
                 inputRef.current?.click();
               }
             }}
-            className={`relative group bg-surface-container-lowest rounded-xl p-space-2xl text-center shadow-sm cursor-pointer transition-all duration-300 hover:shadow-md flex flex-col items-center justify-center min-h-[360px] ${dragOver ? 'bg-warm-surface scale-[1.01]' : ''} ${loading ? 'pointer-events-none opacity-80' : ''}`}
+            className={`relative group bg-surface-container-lowest rounded-xl p-space-2xl text-center shadow-sm cursor-pointer transition-all duration-300 hover:shadow-md flex flex-col items-center justify-center min-h-[360px] ${dragOver ? 'bg-warm-surface scale-[1.01]' : ''} ${isBusy ? 'pointer-events-none opacity-80' : ''}`}
             id="dropzone"
           >
             <input
@@ -238,18 +257,18 @@ export default function VideoUpload({
               multiple
               className="hidden"
               onChange={onInputChange}
-              disabled={loading || !effectiveCanUpload}
+              disabled={isBusy || !effectiveCanUpload}
             />
             <div className="absolute inset-0 bg-gradient-to-b from-primary-container/5 via-transparent to-transparent pointer-events-none rounded-xl"></div>
             
             <div className={`w-20 h-20 rounded-full bg-warm-surface flex items-center justify-center mb-space-lg shadow-[0_8px_24px_-4px_rgba(255,94,30,0.25)] transition-transform duration-300 ${dragOver ? 'scale-110' : 'group-hover:scale-105'}`}>
-              <span className={`material-symbols-outlined text-[44px] ${loading ? 'text-primary animate-spin' : 'text-primary-container'}`}>
-                {loading ? 'autorenew' : 'cloud_upload'}
+              <span className={`material-symbols-outlined text-[44px] ${isBusy ? 'text-primary animate-spin' : 'text-primary-container'}`}>
+                {isBusy ? 'autorenew' : 'cloud_upload'}
               </span>
             </div>
             
             <h3 className="font-headline-lg text-headline-lg text-on-surface mb-space-xs font-bold">
-              {loading
+              {isBusy
                 ? `جاري الرفع${batchTotal > 0 ? ' (' + batchIndex + '/' + batchTotal + ')' : ''}…`
                 : dragOver
                     ? 'أفلِت الملفات هنا'
@@ -320,29 +339,46 @@ export default function VideoUpload({
             </div>
           )}
 
-          {loading && selectedFile && (
-            <div className="bg-surface-container-lowest p-space-lg rounded-xl shadow-sm">
+          {selectedFile && (
+            <div className="bg-surface-container-lowest p-space-lg rounded-xl shadow-sm border border-outline-variant/30">
               <div className="flex items-center justify-between mb-space-sm">
                 <div className="flex items-center gap-space-sm">
                   <div className="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center">
-                    <span className="material-symbols-outlined text-primary-container text-[24px]">videocam</span>
+                    <span className="material-symbols-outlined text-primary-container text-[24px]">
+                      {selectedFile.type?.startsWith('image/') ? 'image' : 'videocam'}
+                    </span>
                   </div>
                   <div className="flex-1 overflow-hidden">
                     <h4 className="font-headline-sm text-headline-sm text-on-surface truncate">{selectedFile.name}</h4>
-                    <p className="font-body-sm text-body-sm text-on-surface-variant">{(selectedFile.size / (1024 * 1024)).toFixed(1)} MB • جاري المعالجة...</p>
+                    <p className="font-body-sm text-body-sm text-on-surface-variant">
+                      {(selectedFile.size / (1024 * 1024)).toFixed(1)} MB • {isPreparing ? 'جاري الفحص والتجهيز...' : (progress === 100 ? 'اكتمل الرفع، جاري الحفظ والتأمين...' : 'جاري الرفع...')}
+                    </p>
                   </div>
                 </div>
                 <div className="text-left">
-                  <span className="font-headline-sm text-headline-sm text-primary-container font-bold">{Math.round(progress)}%</span>
+                  <span className="font-headline-sm text-headline-sm text-primary-container font-bold">
+                    {isPreparing ? `${Math.round(prepProgress)}%` : `${Math.round(progress)}%`}
+                  </span>
                 </div>
               </div>
               <div className="w-full bg-surface-container h-2 rounded-full overflow-hidden mb-space-sm">
-                <div className="bg-primary-container h-full rounded-full transition-all duration-300" style={{ width: `${progress}%` }}></div>
+                <div
+                  className="bg-primary-container h-full rounded-full transition-all duration-300"
+                  style={{ width: `${isPreparing ? Math.max(5, prepProgress) : progress}%` }}
+                ></div>
               </div>
               <div className="flex items-center justify-between text-on-surface-variant font-body-sm text-body-sm">
                 <div className="flex items-center gap-space-xs">
-                  <span className="material-symbols-outlined text-success-green text-[18px]">verified</span>
-                  <span className="text-success-green font-semibold">يتم معالجة الملف</span>
+                  <span className={`material-symbols-outlined text-[18px] ${isPreparing || (loading && progress < 100) ? 'text-primary-container animate-spin' : 'text-success-green'}`}>
+                    {isPreparing || (loading && progress < 100) ? 'autorenew' : 'verified'}
+                  </span>
+                  <span className="text-on-surface font-semibold">
+                    {isPreparing
+                      ? 'يتم فحص وتجهيز الملف'
+                      : progress === 100
+                        ? 'تم إرسال الملف، جاري الحفظ'
+                        : `يتم رفع الملف إلى السيرفر${batchTotal > 0 ? ` (${batchIndex}/${batchTotal})` : ''}`}
+                  </span>
                 </div>
               </div>
             </div>
