@@ -15,6 +15,7 @@ export default function WatchClient({ id, accessToken }) {
 
   const streamSrc = useMemo(() => {
     if (!meta?.streamUrl) return '';
+    if (meta.streamUrl.startsWith('http')) return meta.streamUrl;
     const token = accessToken ? `?accessToken=${encodeURIComponent(accessToken)}` : '';
     return `${meta.streamUrl}${token}`;
   }, [meta?.streamUrl, accessToken]);

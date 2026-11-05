@@ -52,8 +52,14 @@ export default function ShareTools({ item, onCopy, compact = false }) {
           {showQr ? 'إخفاء QR' : 'QR Code'}
         </button>
         <a
-          href={`${item.url}?accessToken=${encodeURIComponent(item.accessToken)}`}
+          href={
+            item.source === 'github' || item.url?.startsWith('http')
+              ? (item.sourceUrl || item.rawUrl || item.url)
+              : `${item.url}?accessToken=${encodeURIComponent(item.accessToken)}`
+          }
           download={item.name}
+          target="_blank"
+          rel="noreferrer"
           className="text-xs px-3 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/20 transition"
         >
           تحميل

@@ -89,15 +89,17 @@ export async function persistVideoBuffer(
           source: 'github',
           rawUrl: githubResult.sourceUrl,
           sourceUrl: githubResult.sourceUrl,
+          cdnUrl: githubResult.cdnUrl,
           ghOwner: githubResult.owner,
           ghRepo: githubResult.repo,
           ghBranch: githubResult.branch,
-          url: `/api/videos/${baseVideo.id}/stream`,
+          url: githubResult.sourceUrl,
           thumbnailUrl: '',
         });
       }
     } catch (e) {
       console.error('GitHub upload failed, falling back to local:', e);
+      throw new Error(`فشل الرفع إلى GitHub: ${e.message}`);
     }
   }
 

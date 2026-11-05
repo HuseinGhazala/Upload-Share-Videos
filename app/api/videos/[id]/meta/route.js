@@ -37,6 +37,11 @@ export async function GET(request, props) {
     (browserSessionId && video.browserSessionId === browserSessionId) ||
     (user?.id && video.ownerId === user.id);
 
+  const directUrl =
+    (video.source === 'github' && (video.sourceUrl || video.rawUrl))
+      ? (video.sourceUrl || video.rawUrl)
+      : video.url;
+
   return NextResponse.json({
     success: true,
     item: {
@@ -44,7 +49,10 @@ export async function GET(request, props) {
       name: video.name,
       mimeType: video.mimeType,
       mediaKind: isImageMedia(video) ? 'image' : 'video',
-      streamUrl: video.url,
+      streamUrl: directUrl,
+      sourceUrl: video.sourceUrl,
+      rawUrl: video.rawUrl,
+      source: video.source,
       views: video.views || 0,
       uploadedAt: video.uploadedAt,
       expiresAt: video.expiresAt || null,

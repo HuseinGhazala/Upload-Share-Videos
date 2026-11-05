@@ -180,15 +180,21 @@ export default function MobileDashboard({ uploadedVideos = [], loading = false }
               </div>
             ) : (
               uploadedVideos.map((video, index) => {
-                const isImage = video.type && video.type.startsWith('image');
+                const isImage = (video.type && video.type.startsWith('image')) || video.mediaKind === 'image';
+                const directUrl = (video.source === 'github' && (video.sourceUrl || video.rawUrl))
+                  ? (video.sourceUrl || video.rawUrl)
+                  : video.url;
+                const targetUrl = directUrl?.startsWith('http')
+                  ? directUrl
+                  : ((typeof window !== 'undefined' ? window.location.origin : '') + (directUrl || ''));
                 return (
                   <div key={video.id || index} className="bg-surface-container-lowest border border-outline-variant/30 rounded-3xl p-4 shadow-sm flex flex-col gap-3">
                     <div className="flex gap-3">
                       <div className="relative w-28 h-20 rounded-xl overflow-hidden shrink-0 bg-surface-container-high border border-outline-variant/20">
                         {isImage ? (
-                          <img className="w-full h-full object-cover" src={video.url} alt={video.title} />
+                          <img className="w-full h-full object-cover" src={directUrl} alt={video.title || video.name} />
                         ) : (
-                          <video className="w-full h-full object-cover" src={video.url}></video>
+                          <video className="w-full h-full object-cover" src={directUrl}></video>
                         )}
                         <span className="absolute bottom-1 right-1 bg-charcoal-navy/85 text-on-primary font-code-badge text-[9px] px-1.5 py-0.5 rounded-md backdrop-blur-sm">
                           {isImage ? 'صورة' : 'فيديو'}
@@ -210,13 +216,17 @@ export default function MobileDashboard({ uploadedVideos = [], loading = false }
                     </div>
                     <div className="grid grid-cols-2 gap-2 pt-1 border-t border-outline-variant/20">
                       <button onClick={() => {
-                        navigator.clipboard.writeText(window.location.origin + video.url);
+                        navigator.clipboard.writeText(targetUrl);
                         alert('تم النسخ!');
                       }} className="flex items-center justify-center gap-1.5 bg-warm-surface text-electric-citrus hover:bg-surface-container py-2.5 rounded-xl font-label-md text-xs font-bold active:scale-95 transition-transform">
                         <span className="material-symbols-outlined text-[16px]">link</span>
                         <span>نسخ الرابط</span>
                       </button>
-                      <button className="flex items-center justify-center gap-1.5 bg-surface-container text-charcoal-navy hover:bg-surface-variant py-2.5 rounded-xl font-label-md text-xs font-bold active:scale-95 transition-transform">
+                      <button onClick={() => {
+                        const embedCode = `<video controls playsinline width="100%" src="${targetUrl}"></video>`;
+                        navigator.clipboard.writeText(embedCode);
+                        alert('تم نسخ كود التضمين!');
+                      }} className="flex items-center justify-center gap-1.5 bg-surface-container text-charcoal-navy hover:bg-surface-variant py-2.5 rounded-xl font-label-md text-xs font-bold active:scale-95 transition-transform">
                         <span className="material-symbols-outlined text-[16px]">code</span>
                         <span>تضمين سلة/زد</span>
                       </button>

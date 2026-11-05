@@ -348,24 +348,50 @@ export default function VideoUpload({
             </div>
           )}
           
-          {lastUploaded && (
-            <div className="bg-surface-container-lowest p-space-lg rounded-xl shadow-sm border border-success-green/20">
-              <div className="flex items-center justify-between mb-space-md">
-                <div className="flex items-center gap-space-sm">
-                  <div className="w-10 h-10 rounded-lg bg-success-green/10 flex items-center justify-center">
-                    <span className="material-symbols-outlined text-success-green text-[24px]">check_circle</span>
+          {lastUploaded && (() => {
+            const finalUploadedUrl = (lastUploaded.source === 'github' && (lastUploaded.sourceUrl || lastUploaded.rawUrl))
+              ? (lastUploaded.sourceUrl || lastUploaded.rawUrl)
+              : (lastUploaded.url?.startsWith('http') ? lastUploaded.url : (lastUploaded.shortUrl || lastUploaded.url));
+            const isGithub = lastUploaded.source === 'github' || finalUploadedUrl.includes('githubusercontent.com');
+
+            return (
+              <div className="bg-surface-container-lowest p-space-lg rounded-xl shadow-sm border border-success-green/20">
+                <div className="flex items-center justify-between mb-space-sm">
+                  <div className="flex items-center gap-space-sm">
+                    <div className="w-10 h-10 rounded-lg bg-success-green/10 flex items-center justify-center">
+                      <span className="material-symbols-outlined text-success-green text-[24px]">check_circle</span>
+                    </div>
+                    <div>
+                      <h4 className="font-headline-sm text-headline-sm text-on-surface">اكتمل الرفع بنجاح</h4>
+                      <p className="font-body-sm text-body-sm text-on-surface-variant">
+                        {isGithub ? 'تم الرفع إلى GitHub ورابط الملف المباشر جاهز للتشغيل' : 'تم حفظ الملف وتأمين الرابط'}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <h4 className="font-headline-sm text-headline-sm text-on-surface">اكتمل الرفع</h4>
-                    <p className="font-body-sm text-body-sm text-on-surface-variant">تم حفظ الملف وتأمين الرابط</p>
-                  </div>
+                  <button onClick={() => onCopy(finalUploadedUrl)} className="text-primary-container hover:text-primary transition-colors flex items-center gap-space-xs font-label-md">
+                    <span className="material-symbols-outlined text-[18px]">content_copy</span> نسخ الرابط
+                  </button>
                 </div>
-                <button onClick={() => onCopy(lastUploaded.shortUrl || lastUploaded.url)} className="text-primary-container hover:text-primary transition-colors flex items-center gap-space-xs font-label-md">
-                  <span className="material-symbols-outlined text-[18px]">content_copy</span> نسخ الرابط
-                </button>
+
+                <div className="flex items-center gap-space-xs bg-surface-container rounded-lg p-space-xs border border-outline-variant/30 mt-space-xs">
+                  <input
+                    type="text"
+                    readOnly
+                    value={finalUploadedUrl}
+                    className="bg-transparent text-on-surface text-body-sm font-mono flex-1 px-space-xs outline-none select-all truncate"
+                    dir="ltr"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => onCopy(finalUploadedUrl)}
+                    className="px-space-sm py-1 bg-primary-container text-on-primary rounded-md text-xs font-bold hover:bg-primary transition-colors shrink-0"
+                  >
+                    نسخ
+                  </button>
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
         </div>
 
         <div className="lg:col-span-5 flex flex-col gap-space-md">

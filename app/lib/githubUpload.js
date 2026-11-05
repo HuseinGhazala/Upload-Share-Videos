@@ -69,9 +69,11 @@ async function putFileToRepo(buffer, contentPath, config) {
   }
 
   const rawUserContentUrl = `https://raw.githubusercontent.com/${config.owner}/${config.repo}/${config.branch}/${contentPath}`;
+  const cdnUrl = `https://cdn.jsdelivr.net/gh/${config.owner}/${config.repo}@${config.branch}/${contentPath}`;
 
   return {
     sourceUrl: rawUserContentUrl,
+    cdnUrl,
     publicId: contentPath,
     owner: config.owner,
     repo: config.repo,
@@ -93,6 +95,7 @@ export async function uploadVideoToGitHub(buffer, { originalName, mimeType }) {
 
   return {
     sourceUrl: result.sourceUrl,
+    cdnUrl: result.cdnUrl,
     publicId: result.publicId,
     owner: result.owner,
     repo: result.repo,

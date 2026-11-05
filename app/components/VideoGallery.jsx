@@ -21,23 +21,33 @@ function formatSize(bytes) {
 }
 
 function getWatchStreamUrl(video) {
+  if (video.source === 'github' && (video.sourceUrl || video.rawUrl)) {
+    return video.sourceUrl || video.rawUrl;
+  }
+  if (video.url && video.url.startsWith('http')) {
+    return video.url;
+  }
   return `${video.url}${video.visibility === 'public' ? '' : `?accessToken=${video.accessToken}`}`;
 }
 
 function getDirectUrl(video) {
+  if (video.source === 'github' && (video.sourceUrl || video.rawUrl)) {
+    return video.sourceUrl || video.rawUrl;
+  }
   return video.rawUrl || video.sourceUrl || video.url;
 }
 
 function MediaCard({ item, playing, onPlayChange, onCopy, onTrackView, openEmbedModal, openQRModal, showToast }) {
   const isImage = isImageMedia(item);
   const videoRef = useRef(null);
+  const directSource = getDirectUrl(item);
 
   useEffect(() => {
     if (isImage) return;
     const video = videoRef.current;
     if (!video) return;
 
-    const streamUrl = (item.hlsStatus === 'ready' && item.hlsUrl) ? item.hlsUrl : item.url;
+    const streamUrl = (item.hlsStatus === 'ready' && item.hlsUrl) ? item.hlsUrl : directSource;
     let hlsInstance = null;
 
     if (item.hlsStatus === 'ready') {
@@ -52,13 +62,13 @@ function MediaCard({ item, playing, onPlayChange, onCopy, onTrackView, openEmbed
         }
       }).catch(console.error);
     } else {
-      video.src = streamUrl + '#t=0.1';
+      video.src = streamUrl + (streamUrl.includes('?') ? '&t=0.1' : '#t=0.1');
     }
 
     return () => {
       if (hlsInstance) hlsInstance.destroy();
     };
-  }, [item.url, item.hlsStatus, item.hlsUrl, isImage]);
+  }, [directSource, item.hlsStatus, item.hlsUrl, isImage]);
 
   const watchUrl = getWatchStreamUrl(item);
 
@@ -67,7 +77,7 @@ function MediaCard({ item, playing, onPlayChange, onCopy, onTrackView, openEmbed
       <div className={`relative w-full h-48 bg-charcoal-navy overflow-hidden flex items-center justify-center`}>
         {isImage ? (
           <img
-            src={item.url}
+            src={directSource}
             alt={item.name}
             className="w-full h-full object-cover object-top transition-all duration-[4000ms] ease-in-out group-hover:object-bottom"
             onLoad={() => onTrackView?.(item.id, null)}
@@ -540,27 +550,38 @@ export default function VideoGallery({
               <span className="font-headline-sm text-headline-sm text-on-surface font-mono bg-surface-container px-3 py-1.5 rounded-lg truncate">{embedData.name}</span>
             </div>
             <div className="flex flex-col gap-space-xs">
-              <span className="font-label-lg text-label-lg text-on-surface-variant">رمز iframe متوافق مع المنصات:</span>
-              <textarea 
-                className="w-full h-24 p-space-sm bg-surface-container-low text-on-surface font-mono text-body-sm rounded-xl resize-none outline-none select-all" 
-                readOnly 
-                value={`<iframe src="${embedData.url}" width="100%" height="450" frameborder="0" allowfullscreen loading="lazy"></iframe>`}
-                id="embedCodeText"
-              />
-            </div>
-            <div className="flex items-center justify-end gap-space-sm">
-              <button className="px-space-md py-2 rounded-xl font-label-lg text-label-lg text-on-surface-variant hover:bg-surface-container" onClick={() => setEmbedData(null)}>إغلاق</button>
-              <button 
-                className="px-space-md py-2 rounded-xl font-headline-sm text-headline-sm bg-primary-container text-on-primary flex items-center gap-1 shadow-md shadow-primary-container/20" 
-                onClick={() => {
-                  navigator.clipboard.writeText(`<iframe src="${embedData.url}" width="100%" height="450" frameborder="0" allowfullscreen loading="lazy"></iframe>`);
-                  showToast('تم نسخ كود التضمين بنجاح!');
-                  setEmbedData(null);
-                }}
-              >
-                <span className="material-symbols-outlined text-[18px]">content_copy</span>
-                <span>نسخ الكود</span>
-              </button>
+              <span className="font-label-lg text-label-lg text-on-surface-variant">كود التضمين للموقع أو المتجر (سلة / زد / صفحات الهبوط):</span>
+              {(() => {
+                const isDirectMedia = embedData.url.startsWith('http') || /\.(mp4|webm|mov|png|jpg|webp)(\?|$)/i.test(embedData.url);
+                const codeSnippet = isDirectMedia
+                  ? `<video controls playsinline preload="metadata" width="100%" src="${embedData.url}"></video>`
+                  : `<iframe src="${embedData.url}" width="100%" height="450" frameborder="0" allowfullscreen loading="lazy"></iframe>`;
+                return (
+                  <>
+                    <textarea 
+                      className="w-full h-24 p-space-sm bg-surface-container-low text-on-surface font-mono text-body-sm rounded-xl resize-none outline-none select-all" 
+                      readOnly 
+                      value={codeSnippet}
+                      id="embedCodeText"
+                      dir="ltr"
+                    />
+                    <div className="flex items-center justify-end gap-space-sm">
+                      <button className="px-space-md py-2 rounded-xl font-label-lg text-label-lg text-on-surface-variant hover:bg-surface-container" onClick={() => setEmbedData(null)}>إغلاق</button>
+                      <button 
+                        className="px-space-md py-2 rounded-xl font-headline-sm text-headline-sm bg-primary-container text-on-primary flex items-center gap-1 shadow-md shadow-primary-container/20" 
+                        onClick={() => {
+                          navigator.clipboard.writeText(codeSnippet);
+                          showToast('تم نسخ كود التضمين بنجاح!');
+                          setEmbedData(null);
+                        }}
+                      >
+                        <span className="material-symbols-outlined text-[18px]">content_copy</span>
+                        <span>نسخ الكود</span>
+                      </button>
+                    </div>
+                  </>
+                );
+              })()}
             </div>
           </div>
         </div>
